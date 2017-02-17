@@ -9,6 +9,7 @@
 
     <title>m3u8_rs::playlist::Playlist - Rust</title>
 
+    <link rel="stylesheet" type="text/css" href="../../normalize.css">
     <link rel="stylesheet" type="text/css" href="../../rustdoc.css">
     <link rel="stylesheet" type="text/css" href="../../main.css">
     
@@ -47,7 +48,7 @@
                    <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
                        [<span class='inner'>&#x2212;</span>]
                    </a>
-               </span><a id='src-12' class='srclink' href='../../src/m3u8_rs/src/playlist.rs.html#20-23' title='goto source code'>[src]</a></span></h1>
+               </span><a class='srclink' href='../../src/m3u8_rs/playlist.rs.html#42-45' title='goto source code'>[src]</a></span></h1>
 <pre class='rust enum'>pub enum Playlist {
     MasterPlaylist(<a class='struct' href='../../m3u8_rs/playlist/struct.MasterPlaylist.html' title='m3u8_rs::playlist::MasterPlaylist'>MasterPlaylist</a>),
     MediaPlaylist(<a class='struct' href='../../m3u8_rs/playlist/struct.MediaPlaylist.html' title='m3u8_rs::playlist::MediaPlaylist'>MediaPlaylist</a>),
@@ -59,9 +60,17 @@ identify Media Segments.  A Playlist is a Master Playlist if all URI
 lines in the Playlist identify Media Playlists.  A Playlist MUST be
 either a Media Playlist or a Master Playlist; all other Playlists are invalid.</p>
 </div><h2 class='variants'>Variants</h2>
-<table class='variants_table'><tr><td id='variant.MasterPlaylist'><code>MasterPlaylist</code></td><td></td><td></td></tr><tr><td id='variant.MediaPlaylist'><code>MediaPlaylist</code></td><td></td><td></td></tr></table><h2 id='implementations'>Trait Implementations</h2><h3 class='impl'><code>impl <a class='trait' href='https://doc.rust-lang.org/nightly/core/fmt/trait.Display.html' title='core::fmt::Display'>Display</a> for <a class='enum' href='../../m3u8_rs/playlist/enum.Playlist.html' title='m3u8_rs::playlist::Playlist'>Playlist</a></code></h3><div class='impl-items'><h4 id='method.fmt' class='method'><code>fn <a href='https://doc.rust-lang.org/nightly/core/fmt/trait.Display.html#tymethod.fmt' class='fnname'>fmt</a>(&amp;self, f: &amp;mut <a class='struct' href='https://doc.rust-lang.org/nightly/core/fmt/struct.Formatter.html' title='core::fmt::Formatter'>Formatter</a>) -&gt; <a class='type' href='https://doc.rust-lang.org/nightly/core/fmt/type.Result.html' title='core::fmt::Result'>Result</a></code></h4>
-</div><h3 id='derived_implementations'>Derived Implementations </h3><h3 class='impl'><code>impl <a class='trait' href='https://doc.rust-lang.org/nightly/core/fmt/trait.Debug.html' title='core::fmt::Debug'>Debug</a> for <a class='enum' href='../../m3u8_rs/playlist/enum.Playlist.html' title='m3u8_rs::playlist::Playlist'>Playlist</a></code></h3><div class='impl-items'><h4 id='method.fmt-1' class='method'><code>fn <a href='https://doc.rust-lang.org/nightly/core/fmt/trait.Debug.html#tymethod.fmt' class='fnname'>fmt</a>(&amp;self, __arg_0: &amp;mut <a class='struct' href='https://doc.rust-lang.org/nightly/core/fmt/struct.Formatter.html' title='core::fmt::Formatter'>Formatter</a>) -&gt; <a class='type' href='https://doc.rust-lang.org/nightly/core/fmt/type.Result.html' title='core::fmt::Result'>Result</a></code></h4>
-</div></section>
+<span id='variant.MasterPlaylist' class='variant'><span id='MasterPlaylist.v' class='invisible'><code>MasterPlaylist(<a class='struct' href='../../m3u8_rs/playlist/struct.MasterPlaylist.html' title='m3u8_rs::playlist::MasterPlaylist'>MasterPlaylist</a>)</code></span></span><span id='variant.MediaPlaylist' class='variant'><span id='MediaPlaylist.v' class='invisible'><code>MediaPlaylist(<a class='struct' href='../../m3u8_rs/playlist/struct.MediaPlaylist.html' title='m3u8_rs::playlist::MediaPlaylist'>MediaPlaylist</a>)</code></span></span><h2 id='methods'>Methods</h2><h3 class='impl'><span class='in-band'><code>impl <a class='enum' href='../../m3u8_rs/playlist/enum.Playlist.html' title='m3u8_rs::playlist::Playlist'>Playlist</a></code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/m3u8_rs/playlist.rs.html#47-54' title='goto source code'>[src]</a></span></h3>
+<div class='impl-items'><h4 id='method.write_to' class='method'><span id='write_to.v' class='invisible'><code>fn <a href='#method.write_to' class='fnname'>write_to</a>&lt;T:&nbsp;<a class='trait' href='https://doc.rust-lang.org/nightly/std/io/trait.Write.html' title='std::io::Write'>Write</a>&gt;(&amp;self, writer: &amp;mut T) -&gt; <a class='type' href='https://doc.rust-lang.org/nightly/std/io/error/type.Result.html' title='std::io::error::Result'>Result</a>&lt;<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.tuple.html'>()</a>&gt;</code></span></h4>
+</div><h2 id='implementations'>Trait Implementations</h2><h3 class='impl'><span class='in-band'><code>impl <a class='trait' href='https://doc.rust-lang.org/nightly/core/fmt/trait.Debug.html' title='core::fmt::Debug'>Debug</a> for <a class='enum' href='../../m3u8_rs/playlist/enum.Playlist.html' title='m3u8_rs::playlist::Playlist'>Playlist</a></code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/m3u8_rs/playlist.rs.html#41' title='goto source code'>[src]</a></span></h3>
+<div class='impl-items'><h4 id='method.fmt' class='method'><span id='fmt.v' class='invisible'><code>fn <a href='https://doc.rust-lang.org/nightly/core/fmt/trait.Debug.html#tymethod.fmt' class='fnname'>fmt</a>(&amp;self, __arg_0: &amp;mut <a class='struct' href='https://doc.rust-lang.org/nightly/core/fmt/struct.Formatter.html' title='core::fmt::Formatter'>Formatter</a>) -&gt; <a class='type' href='https://doc.rust-lang.org/nightly/core/fmt/type.Result.html' title='core::fmt::Result'>Result</a></code></span></h4>
+<div class='docblock'><p>Formats the value using the given formatter.</p>
+</div></div><h3 class='impl'><span class='in-band'><code>impl <a class='trait' href='https://doc.rust-lang.org/nightly/core/cmp/trait.PartialEq.html' title='core::cmp::PartialEq'>PartialEq</a> for <a class='enum' href='../../m3u8_rs/playlist/enum.Playlist.html' title='m3u8_rs::playlist::Playlist'>Playlist</a></code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/m3u8_rs/playlist.rs.html#41' title='goto source code'>[src]</a></span></h3>
+<div class='impl-items'><h4 id='method.eq' class='method'><span id='eq.v' class='invisible'><code>fn <a href='https://doc.rust-lang.org/nightly/core/cmp/trait.PartialEq.html#tymethod.eq' class='fnname'>eq</a>(&amp;self, __arg_0: &amp;<a class='enum' href='../../m3u8_rs/playlist/enum.Playlist.html' title='m3u8_rs::playlist::Playlist'>Playlist</a>) -&gt; <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.bool.html'>bool</a></code></span></h4>
+<div class='docblock'><p>This method tests for <code>self</code> and <code>other</code> values to be equal, and is used by <code>==</code>. <a href="https://doc.rust-lang.org/nightly/core/cmp/trait.PartialEq.html#tymethod.eq">Read more</a></p>
+</div><h4 id='method.ne' class='method'><span id='ne.v' class='invisible'><code>fn <a href='https://doc.rust-lang.org/nightly/core/cmp/trait.PartialEq.html#method.ne' class='fnname'>ne</a>(&amp;self, __arg_0: &amp;<a class='enum' href='../../m3u8_rs/playlist/enum.Playlist.html' title='m3u8_rs::playlist::Playlist'>Playlist</a>) -&gt; <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.bool.html'>bool</a></code></span></h4>
+<div class='docblock'><p>This method tests for <code>!=</code>.</p>
+</div></div></section>
     <section id='search' class="content hidden"></section>
 
     <section class="footer"></section>
@@ -84,6 +93,8 @@ either a Media Playlist or a Master Playlist; all other Playlists are invalid.</
                     <dd>Move down in search results</dd>
                     <dt>&#9166;</dt>
                     <dd>Go to active search result</dd>
+                    <dt>+</dt>
+                    <dd>Collapse/expand all sections</dd>
                 </dl>
             </div>
 
@@ -115,11 +126,9 @@ either a Media Playlist or a Master Playlist; all other Playlists are invalid.</
     <script>
         window.rootPath = "../../";
         window.currentCrate = "m3u8_rs";
-        window.playgroundUrl = "";
     </script>
     <script src="../../jquery.js"></script>
     <script src="../../main.js"></script>
-    
     <script defer src="../../search-index.js"></script>
 </body>
 </html>

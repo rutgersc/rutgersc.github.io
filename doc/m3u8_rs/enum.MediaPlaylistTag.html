@@ -9,6 +9,7 @@
 
     <title>m3u8_rs::MediaPlaylistTag - Rust</title>
 
+    <link rel="stylesheet" type="text/css" href="../normalize.css">
     <link rel="stylesheet" type="text/css" href="../rustdoc.css">
     <link rel="stylesheet" type="text/css" href="../main.css">
     
@@ -47,7 +48,7 @@
                    <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
                        [<span class='inner'>&#x2212;</span>]
                    </a>
-               </span><a id='src-1272' class='srclink' href='../src/m3u8_rs/src/lib.rs.html#283-295' title='goto source code'>[src]</a></span></h1>
+               </span><a class='srclink' href='../src/m3u8_rs/lib.rs.html#339-351' title='goto source code'>[src]</a></span></h1>
 <pre class='rust enum'>pub enum MediaPlaylistTag {
     M3U(<a class='struct' href='https://doc.rust-lang.org/nightly/collections/string/struct.String.html' title='collections::string::String'>String</a>),
     Version(<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>),
@@ -62,8 +63,10 @@
     IndependentSegments,
 }</pre><div class='docblock'><p>Contains all the tags required to parse a media playlist.</p>
 </div><h2 class='variants'>Variants</h2>
-<table class='variants_table'><tr><td id='variant.M3U'><code>M3U</code></td><td></td><td></td></tr><tr><td id='variant.Version'><code>Version</code></td><td></td><td></td></tr><tr><td id='variant.Segment'><code>Segment</code></td><td></td><td></td></tr><tr><td id='variant.TargetDuration'><code>TargetDuration</code></td><td></td><td></td></tr><tr><td id='variant.MediaSequence'><code>MediaSequence</code></td><td></td><td></td></tr><tr><td id='variant.DiscontinuitySequence'><code>DiscontinuitySequence</code></td><td></td><td></td></tr><tr><td id='variant.EndList'><code>EndList</code></td><td></td><td></td></tr><tr><td id='variant.PlaylistType'><code>PlaylistType</code></td><td></td><td></td></tr><tr><td id='variant.IFramesOnly'><code>IFramesOnly</code></td><td></td><td></td></tr><tr><td id='variant.Start'><code>Start</code></td><td></td><td></td></tr><tr><td id='variant.IndependentSegments'><code>IndependentSegments</code></td><td></td><td></td></tr></table><h2 id='implementations'>Trait Implementations</h2><h3 id='derived_implementations'>Derived Implementations </h3><h3 class='impl'><code>impl <a class='trait' href='https://doc.rust-lang.org/nightly/core/fmt/trait.Debug.html' title='core::fmt::Debug'>Debug</a> for <a class='enum' href='../m3u8_rs/enum.MediaPlaylistTag.html' title='m3u8_rs::MediaPlaylistTag'>MediaPlaylistTag</a></code></h3><div class='impl-items'><h4 id='method.fmt' class='method'><code>fn <a href='https://doc.rust-lang.org/nightly/core/fmt/trait.Debug.html#tymethod.fmt' class='fnname'>fmt</a>(&amp;self, __arg_0: &amp;mut <a class='struct' href='https://doc.rust-lang.org/nightly/core/fmt/struct.Formatter.html' title='core::fmt::Formatter'>Formatter</a>) -&gt; <a class='type' href='https://doc.rust-lang.org/nightly/core/fmt/type.Result.html' title='core::fmt::Result'>Result</a></code></h4>
-</div></section>
+<span id='variant.M3U' class='variant'><span id='M3U.v' class='invisible'><code>M3U(<a class='struct' href='https://doc.rust-lang.org/nightly/collections/string/struct.String.html' title='collections::string::String'>String</a>)</code></span></span><span id='variant.Version' class='variant'><span id='Version.v' class='invisible'><code>Version(<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>)</code></span></span><span id='variant.Segment' class='variant'><span id='Segment.v' class='invisible'><code>Segment(<a class='enum' href='../m3u8_rs/enum.SegmentTag.html' title='m3u8_rs::SegmentTag'>SegmentTag</a>)</code></span></span><span id='variant.TargetDuration' class='variant'><span id='TargetDuration.v' class='invisible'><code>TargetDuration(<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.f32.html'>f32</a>)</code></span></span><span id='variant.MediaSequence' class='variant'><span id='MediaSequence.v' class='invisible'><code>MediaSequence(<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.i32.html'>i32</a>)</code></span></span><span id='variant.DiscontinuitySequence' class='variant'><span id='DiscontinuitySequence.v' class='invisible'><code>DiscontinuitySequence(<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.i32.html'>i32</a>)</code></span></span><span id='variant.EndList' class='variant'><span id='EndList.v' class='invisible'><code>EndList</code></span></span><span id='variant.PlaylistType' class='variant'><span id='PlaylistType.v' class='invisible'><code>PlaylistType(<a class='enum' href='../m3u8_rs/playlist/enum.MediaPlaylistType.html' title='m3u8_rs::playlist::MediaPlaylistType'>MediaPlaylistType</a>)</code></span></span><span id='variant.IFramesOnly' class='variant'><span id='IFramesOnly.v' class='invisible'><code>IFramesOnly</code></span></span><span id='variant.Start' class='variant'><span id='Start.v' class='invisible'><code>Start(<a class='struct' href='../m3u8_rs/playlist/struct.Start.html' title='m3u8_rs::playlist::Start'>Start</a>)</code></span></span><span id='variant.IndependentSegments' class='variant'><span id='IndependentSegments.v' class='invisible'><code>IndependentSegments</code></span></span><h2 id='implementations'>Trait Implementations</h2><h3 class='impl'><span class='in-band'><code>impl <a class='trait' href='https://doc.rust-lang.org/nightly/core/fmt/trait.Debug.html' title='core::fmt::Debug'>Debug</a> for <a class='enum' href='../m3u8_rs/enum.MediaPlaylistTag.html' title='m3u8_rs::MediaPlaylistTag'>MediaPlaylistTag</a></code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../src/m3u8_rs/lib.rs.html#338' title='goto source code'>[src]</a></span></h3>
+<div class='impl-items'><h4 id='method.fmt' class='method'><span id='fmt.v' class='invisible'><code>fn <a href='https://doc.rust-lang.org/nightly/core/fmt/trait.Debug.html#tymethod.fmt' class='fnname'>fmt</a>(&amp;self, __arg_0: &amp;mut <a class='struct' href='https://doc.rust-lang.org/nightly/core/fmt/struct.Formatter.html' title='core::fmt::Formatter'>Formatter</a>) -&gt; <a class='type' href='https://doc.rust-lang.org/nightly/core/fmt/type.Result.html' title='core::fmt::Result'>Result</a></code></span></h4>
+<div class='docblock'><p>Formats the value using the given formatter.</p>
+</div></div></section>
     <section id='search' class="content hidden"></section>
 
     <section class="footer"></section>
@@ -86,6 +89,8 @@
                     <dd>Move down in search results</dd>
                     <dt>&#9166;</dt>
                     <dd>Go to active search result</dd>
+                    <dt>+</dt>
+                    <dd>Collapse/expand all sections</dd>
                 </dl>
             </div>
 
@@ -117,11 +122,9 @@
     <script>
         window.rootPath = "../";
         window.currentCrate = "m3u8_rs";
-        window.playgroundUrl = "";
     </script>
     <script src="../jquery.js"></script>
     <script src="../main.js"></script>
-    
     <script defer src="../search-index.js"></script>
 </body>
 </html>

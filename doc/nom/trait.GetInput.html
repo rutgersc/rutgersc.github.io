@@ -9,6 +9,7 @@
 
     <title>nom::GetInput - Rust</title>
 
+    <link rel="stylesheet" type="text/css" href="../normalize.css">
     <link rel="stylesheet" type="text/css" href="../rustdoc.css">
     <link rel="stylesheet" type="text/css" href="../main.css">
     
@@ -47,18 +48,18 @@
                    <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
                        [<span class='inner'>&#x2212;</span>]
                    </a>
-               </span><a id='src-958' class='srclink' href='../src/nom/internal.rs.html#126-128' title='goto source code'>[src]</a></span></h1>
+               </span><a class='srclink' href='../src/nom/internal.rs.html#126-128' title='goto source code'>[src]</a></span></h1>
 <pre class='rust trait'>pub trait GetInput&lt;I&gt; {
     fn <a href='#tymethod.remaining_input' class='fnname'>remaining_input</a>(&amp;self) -&gt; <a class='enum' href='https://doc.rust-lang.org/nightly/core/option/enum.Option.html' title='core::option::Option'>Option</a>&lt;I&gt;;
 }</pre>
             <h2 id='required-methods'>Required Methods</h2>
             <div class='methods'>
-        <h3 id='tymethod.remaining_input' class='method stab '><code>fn <a href='#tymethod.remaining_input' class='fnname'>remaining_input</a>(&amp;self) -&gt; <a class='enum' href='https://doc.rust-lang.org/nightly/core/option/enum.Option.html' title='core::option::Option'>Option</a>&lt;I&gt;</code></h3></div>
+        <h3 id='tymethod.remaining_input' class='method'><span id='remaining_input.v' class='invisible'><code>fn <a href='#tymethod.remaining_input' class='fnname'>remaining_input</a>(&amp;self) -&gt; <a class='enum' href='https://doc.rust-lang.org/nightly/core/option/enum.Option.html' title='core::option::Option'>Option</a>&lt;I&gt;</code></span></h3></div>
         <h2 id='implementors'>Implementors</h2>
         <ul class='item-list' id='implementors-list'>
-    <li><code>impl&lt;'a, I, O, E&gt; <a class='trait' href='../nom/trait.GetInput.html' title='nom::GetInput'>GetInput</a>&lt;<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>&amp;'a [</a>I<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>]</a>&gt; for <a class='enum' href='../nom/enum.IResult.html' title='nom::IResult'>IResult</a>&lt;<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>&amp;'a [</a>I<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>]</a>, O, E&gt;</code></li>
-<li><code>impl&lt;O, E&gt; <a class='trait' href='../nom/trait.GetInput.html' title='nom::GetInput'>GetInput</a>&lt;<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.tuple.html'>()</a>&gt; for <a class='enum' href='../nom/enum.IResult.html' title='nom::IResult'>IResult</a>&lt;<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.tuple.html'>()</a>, O, E&gt;</code></li>
-<li><code>impl&lt;'a, O, E&gt; <a class='trait' href='../nom/trait.GetInput.html' title='nom::GetInput'>GetInput</a>&lt;&amp;'a <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.str.html'>str</a>&gt; for <a class='enum' href='../nom/enum.IResult.html' title='nom::IResult'>IResult</a>&lt;&amp;'a <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.str.html'>str</a>, O, E&gt;</code></li>
+    <li><code>impl&lt;'a, I, O, E&gt; GetInput&lt;<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>&amp;'a [</a>I<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>]</a>&gt; for nom::<a class='enum' href='../nom/enum.IResult.html' title='nom::IResult'>IResult</a>&lt;<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>&amp;'a [</a>I<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>]</a>, O, E&gt;</code></li>
+<li><code>impl&lt;O, E&gt; GetInput&lt;<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.tuple.html'>()</a>&gt; for nom::<a class='enum' href='../nom/enum.IResult.html' title='nom::IResult'>IResult</a>&lt;<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.tuple.html'>()</a>, O, E&gt;</code></li>
+<li><code>impl&lt;'a, O, E&gt; GetInput&lt;&amp;'a <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.str.html'>str</a>&gt; for nom::<a class='enum' href='../nom/enum.IResult.html' title='nom::IResult'>IResult</a>&lt;&amp;'a <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.str.html'>str</a>, O, E&gt;</code></li>
 </ul><script type="text/javascript" async
                          src="../implementors/nom/trait.GetInput.js">
                  </script></section>
@@ -84,6 +85,8 @@
                     <dd>Move down in search results</dd>
                     <dt>&#9166;</dt>
                     <dd>Go to active search result</dd>
+                    <dt>+</dt>
+                    <dd>Collapse/expand all sections</dd>
                 </dl>
             </div>
 
@@ -115,11 +118,9 @@
     <script>
         window.rootPath = "../";
         window.currentCrate = "nom";
-        window.playgroundUrl = "";
     </script>
     <script src="../jquery.js"></script>
     <script src="../main.js"></script>
-    
     <script defer src="../search-index.js"></script>
 </body>
 </html>

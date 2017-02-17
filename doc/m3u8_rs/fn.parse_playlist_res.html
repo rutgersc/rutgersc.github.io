@@ -9,6 +9,7 @@
 
     <title>m3u8_rs::parse_playlist_res - Rust</title>
 
+    <link rel="stylesheet" type="text/css" href="../normalize.css">
     <link rel="stylesheet" type="text/css" href="../rustdoc.css">
     <link rel="stylesheet" type="text/css" href="../main.css">
     
@@ -47,8 +48,8 @@
                    <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
                        [<span class='inner'>&#x2212;</span>]
                    </a>
-               </span><a id='src-614' class='srclink' href='../src/m3u8_rs/src/lib.rs.html#118-124' title='goto source code'>[src]</a></span></h1>
-<pre class='rust fn'>pub fn parse_playlist_res(input: <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>&amp;[</a><a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.u8.html'>u8</a><a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>]</a>) -&gt; <a class='enum' href='https://doc.rust-lang.org/nightly/core/result/enum.Result.html' title='core::result::Result'>Result</a>&lt;<a class='enum' href='../m3u8_rs/playlist/enum.Playlist.html' title='m3u8_rs::playlist::Playlist'>Playlist</a>, <a class='enum' href='../nom/internal/enum.IResult.html' title='nom::internal::IResult'>IResult</a>&lt;<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>&amp;[</a><a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.u8.html'>u8</a><a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>]</a>, <a class='enum' href='../m3u8_rs/playlist/enum.Playlist.html' title='m3u8_rs::playlist::Playlist'>Playlist</a>&gt;&gt;</pre><div class='docblock'><p>Parse a m3u8 playlist just like <code>parse_playlist</code>. This returns a Result<PLaylist,_>.</p>
+               </span><a class='srclink' href='../src/m3u8_rs/lib.rs.html#156-162' title='goto source code'>[src]</a></span></h1>
+<pre class='rust fn'>pub fn parse_playlist_res(input: <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>&amp;[</a><a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.u8.html'>u8</a><a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>]</a>)<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; -&gt; <a class='enum' href='https://doc.rust-lang.org/nightly/core/result/enum.Result.html' title='core::result::Result'>Result</a>&lt;<a class='enum' href='../m3u8_rs/playlist/enum.Playlist.html' title='m3u8_rs::playlist::Playlist'>Playlist</a>, <a class='enum' href='../nom/internal/enum.IResult.html' title='nom::internal::IResult'>IResult</a>&lt;<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>&amp;[</a><a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.u8.html'>u8</a><a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>]</a>, <a class='enum' href='../m3u8_rs/playlist/enum.Playlist.html' title='m3u8_rs::playlist::Playlist'>Playlist</a>&gt;&gt;</pre><div class='docblock'><p>Parse a m3u8 playlist just like <code>parse_playlist</code>. This returns a Result<PLaylist,_>.</p>
 
 <h1 id='examples' class='section-header'><a href='#examples'>Examples</a></h1>
 <pre class='rust rust-example-rendered'>
@@ -62,8 +63,8 @@
 <span class='kw'>let</span> <span class='ident'>parsed</span> <span class='op'>=</span> <span class='ident'>m3u8_rs</span>::<span class='ident'>parse_playlist_res</span>(<span class='kw-2'>&amp;</span><span class='ident'>bytes</span>);
 
 <span class='kw'>match</span> <span class='ident'>parsed</span> {
-    <span class='prelude-val'>Ok</span>(<span class='ident'>Playlist</span>::<span class='ident'>MasterPlaylist</span>(<span class='ident'>pl</span>)) <span class='op'>=&gt;</span> <span class='macro'>println</span><span class='macro'>!</span>(<span class='string'>&quot;Master playlist:\n{}&quot;</span>, <span class='ident'>pl</span>),
-    <span class='prelude-val'>Ok</span>(<span class='ident'>Playlist</span>::<span class='ident'>MediaPlaylist</span>(<span class='ident'>pl</span>)) <span class='op'>=&gt;</span> <span class='macro'>println</span><span class='macro'>!</span>(<span class='string'>&quot;Media playlist:\n{}&quot;</span>, <span class='ident'>pl</span>),
+    <span class='prelude-val'>Ok</span>(<span class='ident'>Playlist</span>::<span class='ident'>MasterPlaylist</span>(<span class='ident'>pl</span>)) <span class='op'>=&gt;</span> <span class='macro'>println</span><span class='macro'>!</span>(<span class='string'>&quot;Master playlist:\n{:?}&quot;</span>, <span class='ident'>pl</span>),
+    <span class='prelude-val'>Ok</span>(<span class='ident'>Playlist</span>::<span class='ident'>MediaPlaylist</span>(<span class='ident'>pl</span>)) <span class='op'>=&gt;</span> <span class='macro'>println</span><span class='macro'>!</span>(<span class='string'>&quot;Media playlist:\n{:?}&quot;</span>, <span class='ident'>pl</span>),
     <span class='prelude-val'>Err</span>(<span class='ident'>e</span>) <span class='op'>=&gt;</span> <span class='macro'>println</span><span class='macro'>!</span>(<span class='string'>&quot;Error: {:?}&quot;</span>, <span class='ident'>e</span>)
 }</pre>
 </div></section>
@@ -89,6 +90,8 @@
                     <dd>Move down in search results</dd>
                     <dt>&#9166;</dt>
                     <dd>Go to active search result</dd>
+                    <dt>+</dt>
+                    <dd>Collapse/expand all sections</dd>
                 </dl>
             </div>
 
@@ -120,11 +123,9 @@
     <script>
         window.rootPath = "../";
         window.currentCrate = "m3u8_rs";
-        window.playgroundUrl = "";
     </script>
     <script src="../jquery.js"></script>
     <script src="../main.js"></script>
-    
     <script defer src="../search-index.js"></script>
 </body>
 </html>

@@ -9,6 +9,7 @@
 
     <title>m3u8_rs::playlist::AlternativeMedia - Rust</title>
 
+    <link rel="stylesheet" type="text/css" href="../../normalize.css">
     <link rel="stylesheet" type="text/css" href="../../rustdoc.css">
     <link rel="stylesheet" type="text/css" href="../../main.css">
     
@@ -47,7 +48,7 @@
                    <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
                        [<span class='inner'>&#x2212;</span>]
                    </a>
-               </span><a id='src-99' class='srclink' href='../../src/m3u8_rs/src/playlist.rs.html#159-172' title='goto source code'>[src]</a></span></h1>
+               </span><a class='srclink' href='../../src/m3u8_rs/playlist.rs.html#246-259' title='goto source code'>[src]</a></span></h1>
 <pre class='rust struct'>pub struct AlternativeMedia {
     pub media_type: <a class='enum' href='../../m3u8_rs/playlist/enum.AlternativeMediaType.html' title='m3u8_rs::playlist::AlternativeMediaType'>AlternativeMediaType</a>,
     pub uri: <a class='enum' href='https://doc.rust-lang.org/nightly/core/option/enum.Option.html' title='core::option::Option'>Option</a>&lt;<a class='struct' href='https://doc.rust-lang.org/nightly/collections/string/struct.String.html' title='collections::string::String'>String</a>&gt;,
@@ -68,23 +69,54 @@ example, three EXT-X-MEDIA tags can be used to identify audio-only
 Media Playlists that contain English, French and Spanish Renditions
 of the same presentation.  Or two EXT-X-MEDIA tags can be used to
 identify video-only Media Playlists that show two different camera angles.</p>
-</div><h2 class='fields'>Fields</h2>
-<table><tr class='stab '>
-                             <td id='structfield.media_type'><code>media_type</code></td><td></td></tr><tr class='stab '>
-                             <td id='structfield.uri'><code>uri</code></td><td></td></tr><tr class='stab '>
-                             <td id='structfield.group_id'><code>group_id</code></td><td></td></tr><tr class='stab '>
-                             <td id='structfield.language'><code>language</code></td><td></td></tr><tr class='stab '>
-                             <td id='structfield.assoc_language'><code>assoc_language</code></td><td></td></tr><tr class='stab '>
-                             <td id='structfield.name'><code>name</code></td><td></td></tr><tr class='stab '>
-                             <td id='structfield.default'><code>default</code></td><td></td></tr><tr class='stab '>
-                             <td id='structfield.autoselect'><code>autoselect</code></td><td></td></tr><tr class='stab '>
-                             <td id='structfield.forced'><code>forced</code></td><td></td></tr><tr class='stab '>
-                             <td id='structfield.instream_id'><code>instream_id</code></td><td></td></tr><tr class='stab '>
-                             <td id='structfield.characteristics'><code>characteristics</code></td><td></td></tr></table><h2 id='methods'>Methods</h2><h3 class='impl'><code>impl <a class='struct' href='../../m3u8_rs/playlist/struct.AlternativeMedia.html' title='m3u8_rs::playlist::AlternativeMedia'>AlternativeMedia</a></code></h3><div class='impl-items'><h4 id='method.from_hashmap' class='method'><code>fn <a href='#method.from_hashmap' class='fnname'>from_hashmap</a>(attrs: <a class='struct' href='https://doc.rust-lang.org/nightly/std/collections/hash/map/struct.HashMap.html' title='std::collections::hash::map::HashMap'>HashMap</a>&lt;<a class='struct' href='https://doc.rust-lang.org/nightly/collections/string/struct.String.html' title='collections::string::String'>String</a>, <a class='struct' href='https://doc.rust-lang.org/nightly/collections/string/struct.String.html' title='collections::string::String'>String</a>&gt;) -&gt; <a class='struct' href='../../m3u8_rs/playlist/struct.AlternativeMedia.html' title='m3u8_rs::playlist::AlternativeMedia'>AlternativeMedia</a></code></h4>
-</div><h2 id='implementations'>Trait Implementations</h2><h3 class='impl'><code>impl <a class='trait' href='https://doc.rust-lang.org/nightly/core/fmt/trait.Display.html' title='core::fmt::Display'>Display</a> for <a class='struct' href='../../m3u8_rs/playlist/struct.AlternativeMedia.html' title='m3u8_rs::playlist::AlternativeMedia'>AlternativeMedia</a></code></h3><div class='impl-items'><h4 id='method.fmt' class='method'><code>fn <a href='https://doc.rust-lang.org/nightly/core/fmt/trait.Display.html#tymethod.fmt' class='fnname'>fmt</a>(&amp;self, f: &amp;mut <a class='struct' href='https://doc.rust-lang.org/nightly/core/fmt/struct.Formatter.html' title='core::fmt::Formatter'>Formatter</a>) -&gt; <a class='type' href='https://doc.rust-lang.org/nightly/core/fmt/type.Result.html' title='core::fmt::Result'>Result</a></code></h4>
-</div><h3 id='derived_implementations'>Derived Implementations </h3><h3 class='impl'><code>impl <a class='trait' href='https://doc.rust-lang.org/nightly/core/default/trait.Default.html' title='core::default::Default'>Default</a> for <a class='struct' href='../../m3u8_rs/playlist/struct.AlternativeMedia.html' title='m3u8_rs::playlist::AlternativeMedia'>AlternativeMedia</a></code></h3><div class='impl-items'><h4 id='method.default' class='method'><code>fn <a href='https://doc.rust-lang.org/nightly/core/default/trait.Default.html#tymethod.default' class='fnname'>default</a>() -&gt; <a class='struct' href='../../m3u8_rs/playlist/struct.AlternativeMedia.html' title='m3u8_rs::playlist::AlternativeMedia'>AlternativeMedia</a></code></h4>
-</div><h3 class='impl'><code>impl <a class='trait' href='https://doc.rust-lang.org/nightly/core/fmt/trait.Debug.html' title='core::fmt::Debug'>Debug</a> for <a class='struct' href='../../m3u8_rs/playlist/struct.AlternativeMedia.html' title='m3u8_rs::playlist::AlternativeMedia'>AlternativeMedia</a></code></h3><div class='impl-items'><h4 id='method.fmt-1' class='method'><code>fn <a href='https://doc.rust-lang.org/nightly/core/fmt/trait.Debug.html#tymethod.fmt' class='fnname'>fmt</a>(&amp;self, __arg_0: &amp;mut <a class='struct' href='https://doc.rust-lang.org/nightly/core/fmt/struct.Formatter.html' title='core::fmt::Formatter'>Formatter</a>) -&gt; <a class='type' href='https://doc.rust-lang.org/nightly/core/fmt/type.Result.html' title='core::fmt::Result'>Result</a></code></h4>
-</div></section>
+</div><h2 class='fields'>Fields</h2><span id='structfield.media_type' class='structfield'>
+                           <span id='media_type.v' class='invisible'>
+                           <code>media_type: <a class='enum' href='../../m3u8_rs/playlist/enum.AlternativeMediaType.html' title='m3u8_rs::playlist::AlternativeMediaType'>AlternativeMediaType</a></code>
+                           </span></span><span class='stab '></span><span id='structfield.uri' class='structfield'>
+                           <span id='uri.v' class='invisible'>
+                           <code>uri: <a class='enum' href='https://doc.rust-lang.org/nightly/core/option/enum.Option.html' title='core::option::Option'>Option</a>&lt;<a class='struct' href='https://doc.rust-lang.org/nightly/collections/string/struct.String.html' title='collections::string::String'>String</a>&gt;</code>
+                           </span></span><span class='stab '></span><span id='structfield.group_id' class='structfield'>
+                           <span id='group_id.v' class='invisible'>
+                           <code>group_id: <a class='struct' href='https://doc.rust-lang.org/nightly/collections/string/struct.String.html' title='collections::string::String'>String</a></code>
+                           </span></span><span class='stab '></span><span id='structfield.language' class='structfield'>
+                           <span id='language.v' class='invisible'>
+                           <code>language: <a class='enum' href='https://doc.rust-lang.org/nightly/core/option/enum.Option.html' title='core::option::Option'>Option</a>&lt;<a class='struct' href='https://doc.rust-lang.org/nightly/collections/string/struct.String.html' title='collections::string::String'>String</a>&gt;</code>
+                           </span></span><span class='stab '></span><span id='structfield.assoc_language' class='structfield'>
+                           <span id='assoc_language.v' class='invisible'>
+                           <code>assoc_language: <a class='enum' href='https://doc.rust-lang.org/nightly/core/option/enum.Option.html' title='core::option::Option'>Option</a>&lt;<a class='struct' href='https://doc.rust-lang.org/nightly/collections/string/struct.String.html' title='collections::string::String'>String</a>&gt;</code>
+                           </span></span><span class='stab '></span><span id='structfield.name' class='structfield'>
+                           <span id='name.v' class='invisible'>
+                           <code>name: <a class='struct' href='https://doc.rust-lang.org/nightly/collections/string/struct.String.html' title='collections::string::String'>String</a></code>
+                           </span></span><span class='stab '></span><span id='structfield.default' class='structfield'>
+                           <span id='default.v' class='invisible'>
+                           <code>default: <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.bool.html'>bool</a></code>
+                           </span></span><span class='stab '></span><span id='structfield.autoselect' class='structfield'>
+                           <span id='autoselect.v' class='invisible'>
+                           <code>autoselect: <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.bool.html'>bool</a></code>
+                           </span></span><span class='stab '></span><span id='structfield.forced' class='structfield'>
+                           <span id='forced.v' class='invisible'>
+                           <code>forced: <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.bool.html'>bool</a></code>
+                           </span></span><span class='stab '></span><span id='structfield.instream_id' class='structfield'>
+                           <span id='instream_id.v' class='invisible'>
+                           <code>instream_id: <a class='enum' href='https://doc.rust-lang.org/nightly/core/option/enum.Option.html' title='core::option::Option'>Option</a>&lt;<a class='struct' href='https://doc.rust-lang.org/nightly/collections/string/struct.String.html' title='collections::string::String'>String</a>&gt;</code>
+                           </span></span><span class='stab '></span><span id='structfield.characteristics' class='structfield'>
+                           <span id='characteristics.v' class='invisible'>
+                           <code>characteristics: <a class='enum' href='https://doc.rust-lang.org/nightly/core/option/enum.Option.html' title='core::option::Option'>Option</a>&lt;<a class='struct' href='https://doc.rust-lang.org/nightly/collections/string/struct.String.html' title='collections::string::String'>String</a>&gt;</code>
+                           </span></span><span class='stab '></span><h2 id='methods'>Methods</h2><h3 class='impl'><span class='in-band'><code>impl <a class='struct' href='../../m3u8_rs/playlist/struct.AlternativeMedia.html' title='m3u8_rs::playlist::AlternativeMedia'>AlternativeMedia</a></code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/m3u8_rs/playlist.rs.html#261-296' title='goto source code'>[src]</a></span></h3>
+<div class='impl-items'><h4 id='method.from_hashmap' class='method'><span id='from_hashmap.v' class='invisible'><code>fn <a href='#method.from_hashmap' class='fnname'>from_hashmap</a>(attrs: <a class='struct' href='https://doc.rust-lang.org/nightly/std/collections/hash/map/struct.HashMap.html' title='std::collections::hash::map::HashMap'>HashMap</a>&lt;<a class='struct' href='https://doc.rust-lang.org/nightly/collections/string/struct.String.html' title='collections::string::String'>String</a>, <a class='struct' href='https://doc.rust-lang.org/nightly/collections/string/struct.String.html' title='collections::string::String'>String</a>&gt;) -&gt; <a class='struct' href='../../m3u8_rs/playlist/struct.AlternativeMedia.html' title='m3u8_rs::playlist::AlternativeMedia'>AlternativeMedia</a></code></span></h4>
+<h4 id='method.write_to' class='method'><span id='write_to.v' class='invisible'><code>fn <a href='#method.write_to' class='fnname'>write_to</a>&lt;T:&nbsp;<a class='trait' href='https://doc.rust-lang.org/nightly/std/io/trait.Write.html' title='std::io::Write'>Write</a>&gt;(&amp;self, w: &amp;mut T) -&gt; <a class='type' href='https://doc.rust-lang.org/nightly/std/io/error/type.Result.html' title='std::io::error::Result'>Result</a>&lt;<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.tuple.html'>()</a>&gt;</code></span></h4>
+</div><h2 id='implementations'>Trait Implementations</h2><h3 class='impl'><span class='in-band'><code>impl <a class='trait' href='https://doc.rust-lang.org/nightly/core/fmt/trait.Debug.html' title='core::fmt::Debug'>Debug</a> for <a class='struct' href='../../m3u8_rs/playlist/struct.AlternativeMedia.html' title='m3u8_rs::playlist::AlternativeMedia'>AlternativeMedia</a></code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/m3u8_rs/playlist.rs.html#245' title='goto source code'>[src]</a></span></h3>
+<div class='impl-items'><h4 id='method.fmt' class='method'><span id='fmt.v' class='invisible'><code>fn <a href='https://doc.rust-lang.org/nightly/core/fmt/trait.Debug.html#tymethod.fmt' class='fnname'>fmt</a>(&amp;self, __arg_0: &amp;mut <a class='struct' href='https://doc.rust-lang.org/nightly/core/fmt/struct.Formatter.html' title='core::fmt::Formatter'>Formatter</a>) -&gt; <a class='type' href='https://doc.rust-lang.org/nightly/core/fmt/type.Result.html' title='core::fmt::Result'>Result</a></code></span></h4>
+<div class='docblock'><p>Formats the value using the given formatter.</p>
+</div></div><h3 class='impl'><span class='in-band'><code>impl <a class='trait' href='https://doc.rust-lang.org/nightly/core/default/trait.Default.html' title='core::default::Default'>Default</a> for <a class='struct' href='../../m3u8_rs/playlist/struct.AlternativeMedia.html' title='m3u8_rs::playlist::AlternativeMedia'>AlternativeMedia</a></code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/m3u8_rs/playlist.rs.html#245' title='goto source code'>[src]</a></span></h3>
+<div class='impl-items'><h4 id='method.default' class='method'><span id='default.v-1' class='invisible'><code>fn <a href='https://doc.rust-lang.org/nightly/core/default/trait.Default.html#tymethod.default' class='fnname'>default</a>() -&gt; <a class='struct' href='../../m3u8_rs/playlist/struct.AlternativeMedia.html' title='m3u8_rs::playlist::AlternativeMedia'>AlternativeMedia</a></code></span></h4>
+<div class='docblock'><p>Returns the &quot;default value&quot; for a type. <a href="https://doc.rust-lang.org/nightly/core/default/trait.Default.html#tymethod.default">Read more</a></p>
+</div></div><h3 class='impl'><span class='in-band'><code>impl <a class='trait' href='https://doc.rust-lang.org/nightly/core/cmp/trait.PartialEq.html' title='core::cmp::PartialEq'>PartialEq</a> for <a class='struct' href='../../m3u8_rs/playlist/struct.AlternativeMedia.html' title='m3u8_rs::playlist::AlternativeMedia'>AlternativeMedia</a></code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/m3u8_rs/playlist.rs.html#245' title='goto source code'>[src]</a></span></h3>
+<div class='impl-items'><h4 id='method.eq' class='method'><span id='eq.v' class='invisible'><code>fn <a href='https://doc.rust-lang.org/nightly/core/cmp/trait.PartialEq.html#tymethod.eq' class='fnname'>eq</a>(&amp;self, __arg_0: &amp;<a class='struct' href='../../m3u8_rs/playlist/struct.AlternativeMedia.html' title='m3u8_rs::playlist::AlternativeMedia'>AlternativeMedia</a>) -&gt; <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.bool.html'>bool</a></code></span></h4>
+<div class='docblock'><p>This method tests for <code>self</code> and <code>other</code> values to be equal, and is used by <code>==</code>. <a href="https://doc.rust-lang.org/nightly/core/cmp/trait.PartialEq.html#tymethod.eq">Read more</a></p>
+</div><h4 id='method.ne' class='method'><span id='ne.v' class='invisible'><code>fn <a href='https://doc.rust-lang.org/nightly/core/cmp/trait.PartialEq.html#method.ne' class='fnname'>ne</a>(&amp;self, __arg_0: &amp;<a class='struct' href='../../m3u8_rs/playlist/struct.AlternativeMedia.html' title='m3u8_rs::playlist::AlternativeMedia'>AlternativeMedia</a>) -&gt; <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.bool.html'>bool</a></code></span></h4>
+<div class='docblock'><p>This method tests for <code>!=</code>.</p>
+</div></div></section>
     <section id='search' class="content hidden"></section>
 
     <section class="footer"></section>
@@ -107,6 +139,8 @@ identify video-only Media Playlists that show two different camera angles.</p>
                     <dd>Move down in search results</dd>
                     <dt>&#9166;</dt>
                     <dd>Go to active search result</dd>
+                    <dt>+</dt>
+                    <dd>Collapse/expand all sections</dd>
                 </dl>
             </div>
 
@@ -138,11 +172,9 @@ identify video-only Media Playlists that show two different camera angles.</p>
     <script>
         window.rootPath = "../../";
         window.currentCrate = "m3u8_rs";
-        window.playgroundUrl = "";
     </script>
     <script src="../../jquery.js"></script>
     <script src="../../main.js"></script>
-    
     <script defer src="../../search-index.js"></script>
 </body>
 </html>

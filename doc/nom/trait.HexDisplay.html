@@ -9,6 +9,7 @@
 
     <title>nom::HexDisplay - Rust</title>
 
+    <link rel="stylesheet" type="text/css" href="../normalize.css">
     <link rel="stylesheet" type="text/css" href="../rustdoc.css">
     <link rel="stylesheet" type="text/css" href="../main.css">
     
@@ -47,7 +48,7 @@
                    <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
                        [<span class='inner'>&#x2212;</span>]
                    </a>
-               </span><a id='src-20' class='srclink' href='../src/nom/util.rs.html#13-24' title='goto source code'>[src]</a></span></h1>
+               </span><a class='srclink' href='../src/nom/util.rs.html#13-24' title='goto source code'>[src]</a></span></h1>
 <pre class='rust trait'>pub trait HexDisplay {
     fn <a href='#tymethod.offset' class='fnname'>offset</a>(&amp;self, second: <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>&amp;[</a><a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.u8.html'>u8</a><a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>]</a>) -&gt; <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>;
     fn <a href='#tymethod.to_hex' class='fnname'>to_hex</a>(&amp;self, chunk_size: <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>) -&gt; <a class='struct' href='https://doc.rust-lang.org/nightly/collections/string/struct.String.html' title='collections::string::String'>String</a>;
@@ -56,15 +57,15 @@
 </div>
             <h2 id='required-methods'>Required Methods</h2>
             <div class='methods'>
-        <h3 id='tymethod.offset' class='method stab '><code>fn <a href='#tymethod.offset' class='fnname'>offset</a>(&amp;self, second: <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>&amp;[</a><a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.u8.html'>u8</a><a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>]</a>) -&gt; <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a></code></h3><div class='docblock'><p>offset between the first byte of self and the first byte of the argument</p>
-</div><h3 id='tymethod.to_hex' class='method stab '><code>fn <a href='#tymethod.to_hex' class='fnname'>to_hex</a>(&amp;self, chunk_size: <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>) -&gt; <a class='struct' href='https://doc.rust-lang.org/nightly/collections/string/struct.String.html' title='collections::string::String'>String</a></code></h3><div class='docblock'><p>Converts the value of <code>self</code> to a hex dump, returning the owned
+        <h3 id='tymethod.offset' class='method'><span id='offset.v' class='invisible'><code>fn <a href='#tymethod.offset' class='fnname'>offset</a>(&amp;self, second: <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>&amp;[</a><a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.u8.html'>u8</a><a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>]</a>) -&gt; <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a></code></span></h3><div class='docblock'><p>offset between the first byte of self and the first byte of the argument</p>
+</div><h3 id='tymethod.to_hex' class='method'><span id='to_hex.v' class='invisible'><code>fn <a href='#tymethod.to_hex' class='fnname'>to_hex</a>(&amp;self, chunk_size: <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>) -&gt; <a class='struct' href='https://doc.rust-lang.org/nightly/collections/string/struct.String.html' title='collections::string::String'>String</a></code></span></h3><div class='docblock'><p>Converts the value of <code>self</code> to a hex dump, returning the owned
 string.</p>
-</div><h3 id='tymethod.to_hex_from' class='method stab '><code>fn <a href='#tymethod.to_hex_from' class='fnname'>to_hex_from</a>(&amp;self, chunk_size: <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>, from: <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>) -&gt; <a class='struct' href='https://doc.rust-lang.org/nightly/collections/string/struct.String.html' title='collections::string::String'>String</a></code></h3><div class='docblock'><p>Converts the value of <code>self</code> to a hex dump beginning at <code>from</code> address, returning the owned
+</div><h3 id='tymethod.to_hex_from' class='method'><span id='to_hex_from.v' class='invisible'><code>fn <a href='#tymethod.to_hex_from' class='fnname'>to_hex_from</a>(&amp;self, chunk_size: <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>, from: <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>) -&gt; <a class='struct' href='https://doc.rust-lang.org/nightly/collections/string/struct.String.html' title='collections::string::String'>String</a></code></span></h3><div class='docblock'><p>Converts the value of <code>self</code> to a hex dump beginning at <code>from</code> address, returning the owned
 string.</p>
 </div></div>
         <h2 id='implementors'>Implementors</h2>
         <ul class='item-list' id='implementors-list'>
-    <li><code>impl <a class='trait' href='../nom/trait.HexDisplay.html' title='nom::HexDisplay'>HexDisplay</a> for <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>[</a><a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.u8.html'>u8</a><a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>]</a></code></li>
+    <li><code>impl HexDisplay for <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>[</a><a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.u8.html'>u8</a><a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>]</a></code></li>
 </ul><script type="text/javascript" async
                          src="../implementors/nom/trait.HexDisplay.js">
                  </script></section>
@@ -90,6 +91,8 @@ string.</p>
                     <dd>Move down in search results</dd>
                     <dt>&#9166;</dt>
                     <dd>Go to active search result</dd>
+                    <dt>+</dt>
+                    <dd>Collapse/expand all sections</dd>
                 </dl>
             </div>
 
@@ -121,11 +124,9 @@ string.</p>
     <script>
         window.rootPath = "../";
         window.currentCrate = "nom";
-        window.playgroundUrl = "";
     </script>
     <script src="../jquery.js"></script>
     <script src="../main.js"></script>
-    
     <script defer src="../search-index.js"></script>
 </body>
 </html>

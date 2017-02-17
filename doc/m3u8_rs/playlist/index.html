@@ -9,6 +9,7 @@
 
     <title>m3u8_rs::playlist - Rust</title>
 
+    <link rel="stylesheet" type="text/css" href="../../normalize.css">
     <link rel="stylesheet" type="text/css" href="../../rustdoc.css">
     <link rel="stylesheet" type="text/css" href="../../main.css">
     
@@ -47,7 +48,7 @@
                    <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
                        [<span class='inner'>&#x2212;</span>]
                    </a>
-               </span><a id='src-5' class='srclink' href='../../src/m3u8_rs/src/playlist.rs.html#1-703' title='goto source code'>[src]</a></span></h1>
+               </span><a class='srclink' href='../../src/m3u8_rs/playlist.rs.html#1-796' title='goto source code'>[src]</a></span></h1>
 <div class='docblock'><p>Contains all the structs used for parsing.</p>
 
 <p>The main type here is the <code>Playlist</code> enum.
@@ -57,49 +58,49 @@ Which is either a <code>MasterPlaylist</code> or a <code>MediaPlaylist</code>.</
                        <tr class=' module-item'>
                            <td><a class='struct' href='struct.AlternativeMedia.html'
                                   title='m3u8_rs::playlist::AlternativeMedia'>AlternativeMedia</a></td>
-                           <td class='docblock short'>
+                           <td class='docblock-short'>
                                 <p><a href="https://tools.ietf.org/html/draft-pantos-http-live-streaming-19#section-4.3.4.1"><code>#EXT-X-MEDIA:&lt;attribute-list&gt;</code></a></p>
                            </td>
                        </tr>
                        <tr class=' module-item'>
                            <td><a class='struct' href='struct.ByteRange.html'
                                   title='m3u8_rs::playlist::ByteRange'>ByteRange</a></td>
-                           <td class='docblock short'>
+                           <td class='docblock-short'>
                                 <p><a href="https://tools.ietf.org/html/draft-pantos-http-live-streaming-19#section-4.3.2.2"><code>#EXT-X-BYTERANGE:&lt;n&gt;[@&lt;o&gt;]</code></a></p>
                            </td>
                        </tr>
                        <tr class=' module-item'>
                            <td><a class='struct' href='struct.DateRange.html'
                                   title='m3u8_rs::playlist::DateRange'>DateRange</a></td>
-                           <td class='docblock short'>
+                           <td class='docblock-short'>
                                 <p><a href="https://tools.ietf.org/html/draft-pantos-http-live-streaming-19#section-4.3.2.7"><code>#EXT-X-DATERANGE:&lt;attribute-list&gt;</code></a></p>
                            </td>
                        </tr>
                        <tr class=' module-item'>
                            <td><a class='struct' href='struct.ExtTag.html'
                                   title='m3u8_rs::playlist::ExtTag'>ExtTag</a></td>
-                           <td class='docblock short'>
+                           <td class='docblock-short'>
                                 <p>A simple <code>#EXT-</code> tag</p>
                            </td>
                        </tr>
                        <tr class=' module-item'>
                            <td><a class='struct' href='struct.Key.html'
                                   title='m3u8_rs::playlist::Key'>Key</a></td>
-                           <td class='docblock short'>
+                           <td class='docblock-short'>
                                 <p><a href="https://tools.ietf.org/html/draft-pantos-http-live-streaming-19#section-4.3.2.4"><code>#EXT-X-KEY:&lt;attribute-list&gt;</code></a></p>
                            </td>
                        </tr>
                        <tr class=' module-item'>
                            <td><a class='struct' href='struct.Map.html'
                                   title='m3u8_rs::playlist::Map'>Map</a></td>
-                           <td class='docblock short'>
+                           <td class='docblock-short'>
                                 <p><a href="https://tools.ietf.org/html/draft-pantos-http-live-streaming-19#section-4.3.2.5"><code>#EXT-X-MAP:&lt;attribute-list&gt;</code></a></p>
                            </td>
                        </tr>
                        <tr class=' module-item'>
                            <td><a class='struct' href='struct.MasterPlaylist.html'
                                   title='m3u8_rs::playlist::MasterPlaylist'>MasterPlaylist</a></td>
-                           <td class='docblock short'>
+                           <td class='docblock-short'>
                                 <p>A <a href="https://tools.ietf.org/html/draft-pantos-http-live-streaming-19#section-4.3.4">Master Playlist</a>
 provides a set of Variant Streams, each of which
 describes a different version of the same content.</p>
@@ -108,7 +109,7 @@ describes a different version of the same content.</p>
                        <tr class=' module-item'>
                            <td><a class='struct' href='struct.MediaPlaylist.html'
                                   title='m3u8_rs::playlist::MediaPlaylist'>MediaPlaylist</a></td>
-                           <td class='docblock short'>
+                           <td class='docblock-short'>
                                 <p>A <a href="https://tools.ietf.org/html/draft-pantos-http-live-streaming-19#section-4.3.3">Media Playlist</a>
 contains a list of Media Segments, which when played
 sequentially will play the multimedia presentation.</p>
@@ -117,7 +118,7 @@ sequentially will play the multimedia presentation.</p>
                        <tr class=' module-item'>
                            <td><a class='struct' href='struct.MediaSegment.html'
                                   title='m3u8_rs::playlist::MediaSegment'>MediaSegment</a></td>
-                           <td class='docblock short'>
+                           <td class='docblock-short'>
                                 <p>A <a href="https://tools.ietf.org/html/draft-pantos-http-live-streaming-19#section-3">Media Segment</a>
 is specified by a URI and optionally a byte range.</p>
                            </td>
@@ -125,7 +126,7 @@ is specified by a URI and optionally a byte range.</p>
                        <tr class=' module-item'>
                            <td><a class='struct' href='struct.SessionData.html'
                                   title='m3u8_rs::playlist::SessionData'>SessionData</a></td>
-                           <td class='docblock short'>
+                           <td class='docblock-short'>
                                 <p><a href="https://tools.ietf.org/html/draft-pantos-http-live-streaming-19#section-4.3.4.4"><code>#EXT-X-SESSION-DATA:&lt;attribute-list&gt;</code></a>
 The EXT-X-SESSION-KEY tag allows encryption keys from Media Playlists
 to be specified in a Master Playlist.  This allows the client to
@@ -135,22 +136,22 @@ preload these keys without having to read the Media Playlist(s) first.</p>
                        <tr class=' module-item'>
                            <td><a class='struct' href='struct.SessionKey.html'
                                   title='m3u8_rs::playlist::SessionKey'>SessionKey</a></td>
-                           <td class='docblock short'>
+                           <td class='docblock-short'>
                                 <p><a href="https://tools.ietf.org/html/draft-pantos-http-live-streaming-19#section-4.3.4.5"><code>#EXT-X-SESSION-KEY:&lt;attribute-list&gt;</code></a></p>
                            </td>
                        </tr>
                        <tr class=' module-item'>
                            <td><a class='struct' href='struct.Start.html'
                                   title='m3u8_rs::playlist::Start'>Start</a></td>
-                           <td class='docblock short'>
+                           <td class='docblock-short'>
                                 <p><a href="https://tools.ietf.org/html/draft-pantos-http-live-streaming-19#section-4.3.5.2"><code>#EXT-X-START:&lt;attribute-list&gt;</code></a></p>
                            </td>
                        </tr>
                        <tr class=' module-item'>
                            <td><a class='struct' href='struct.VariantStream.html'
                                   title='m3u8_rs::playlist::VariantStream'>VariantStream</a></td>
-                           <td class='docblock short'>
-                                <p><a href="https://tools.ietf.org/html/draft-pantos-http-live-streaming-19#section-4.3.4.2"><code>#EXT-X-STREAM-INF:&lt;attribute-list&gt;</code></a>
+                           <td class='docblock-short'>
+                                <p><a href="https://tools.ietf.org/html/draft-pantos-http-live-streaming-19#section-4.3.4.2"><code>#EXT-X-STREAM-INF:&lt;attribute-list&gt; &lt;URI&gt;</code></a>
 <a href="https://tools.ietf.org/html/draft-pantos-http-live-streaming-19#section-4.3.4.3"><code>#EXT-X-I-FRAME-STREAM-INF:&lt;attribute-list&gt;</code></a></p>
                            </td>
                        </tr></table><h2 id='enums' class='section-header'><a href="#enums">Enums</a></h2>
@@ -158,21 +159,21 @@ preload these keys without having to read the Media Playlist(s) first.</p>
                        <tr class=' module-item'>
                            <td><a class='enum' href='enum.AlternativeMediaType.html'
                                   title='m3u8_rs::playlist::AlternativeMediaType'>AlternativeMediaType</a></td>
-                           <td class='docblock short'>
+                           <td class='docblock-short'>
                                 
                            </td>
                        </tr>
                        <tr class=' module-item'>
                            <td><a class='enum' href='enum.MediaPlaylistType.html'
                                   title='m3u8_rs::playlist::MediaPlaylistType'>MediaPlaylistType</a></td>
-                           <td class='docblock short'>
+                           <td class='docblock-short'>
                                 <p><a href="https://tools.ietf.org/html/draft-pantos-http-live-streaming-19#section-4.3.3.5"><code>#EXT-X-PLAYLIST-TYPE:&lt;EVENT|VOD&gt;</code></a></p>
                            </td>
                        </tr>
                        <tr class=' module-item'>
                            <td><a class='enum' href='enum.Playlist.html'
                                   title='m3u8_rs::playlist::Playlist'>Playlist</a></td>
-                           <td class='docblock short'>
+                           <td class='docblock-short'>
                                 <p><a href="https://tools.ietf.org/html/draft-pantos-http-live-streaming-19#section-4.1">Playlist</a>,
 can either be a <code>MasterPlaylist</code> or a <code>MediaPlaylist</code>.</p>
                            </td>
@@ -199,6 +200,8 @@ can either be a <code>MasterPlaylist</code> or a <code>MediaPlaylist</code>.</p>
                     <dd>Move down in search results</dd>
                     <dt>&#9166;</dt>
                     <dd>Go to active search result</dd>
+                    <dt>+</dt>
+                    <dd>Collapse/expand all sections</dd>
                 </dl>
             </div>
 
@@ -230,11 +233,9 @@ can either be a <code>MasterPlaylist</code> or a <code>MediaPlaylist</code>.</p>
     <script>
         window.rootPath = "../../";
         window.currentCrate = "m3u8_rs";
-        window.playgroundUrl = "";
     </script>
     <script src="../../jquery.js"></script>
     <script src="../../main.js"></script>
-    
     <script defer src="../../search-index.js"></script>
 </body>
 </html>
