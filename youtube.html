@@ -7,49 +7,57 @@
       }
 
       #ytplayer {
-        margin-top: 20px;
+        margin-top: 5px;
         width: 100%;
       }
 
       input[type="text"] {
-        width: 73%; /* Adjusted to account for potential padding and margin */
+        width: 50%; /* Adjusted to account for potential padding and margin */
         height: 50px;
         font-size: 18px;
         padding: 10px;
+        display: block;
+        margin: auto auto;
+
         background-color: #2d2d2d;
         color: #ffffff;
         border: none;
-        float: left; /* Aligns the input field to the left */
       }
 
       input[type="button"] {
-        width: 23%; /* Adjusted to account for potential padding and margin */
-        height: 50px;
-        font-size: 18px;
-        padding: 10px;
+        width: 100%; /* Adjusted to account for potential padding and margin */
+        height: 30px;
+        font-size: 14px;
+        /* padding: 14px; */
         background-color: #4e4e4e;
         color: #ffffff;
         border: none;
         cursor: pointer;
-        float: right; /* Aligns the button to the right */
+      }
+
+      p {
+        margin: 4px;
+        text-align: center;
+        font-size: 0.9rem;
       }
     </style>
   </head>
 
   <body onhashchange="onhashchange()">
     <div>
-      <form action="#" onsubmit="apply_input_vid(); return false">
-        <input
-          id="input_vid"
-          type="text"
-          placeholder="Video ID or URL"
-          onfocus="console.log('focus'); this.select()"
-        />
-        <input type="button" value=">>" onclick="apply_input_vid()" />
-      </form>
+      <input
+        id="input_vid"
+        type="text"
+        placeholder="Video ID or URL"
+        onclick="select_input_vid()"
+      />
+      <input
+        type="button"
+        value=">>"
+        onclick="apply_input_vid()" />
     </div>
-    <br />
 
+    <p id="selected_vid">none</p>
     <div id="ytplayer"></div>
     <script>
       // Load the IFrame Player API code asynchronously.
@@ -112,9 +120,13 @@
         onhashchange();
       }
 
+      const selected_vid = document.getElementById("selected_vid");
+
       function onhashchange() {
         console.log("onhashchange");
         const vid = window.location.hash?.substring(1);
+
+        selected_vid.textContent = vid ?? "-";
         apply_vid(vid);
       }
 
@@ -172,7 +184,16 @@
         createCookie(name, "", -1);
       }
 
+
       const input_vid = document.getElementById("input_vid");
+
+      function select_input_vid() {
+        console.log("select_input_vid");
+        const str = input_vid.value;
+        // remove input_vid contents
+        input_vid.value = "";
+
+      }
 
       function apply_input_vid() {
         console.log("apply_input_vid");
