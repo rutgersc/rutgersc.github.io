@@ -12,7 +12,7 @@
       }
 
       input[type="text"] {
-        width: 50%; /* Adjusted to account for potential padding and margin */
+        width: 50%;
         height: 50px;
         font-size: 18px;
         padding: 10px;
@@ -25,10 +25,9 @@
       }
 
       input[type="button"] {
-        width: 100%; /* Adjusted to account for potential padding and margin */
+        width: 100%;
         height: 30px;
         font-size: 14px;
-        /* padding: 14px; */
         background-color: #4e4e4e;
         color: #ffffff;
         border: none;
@@ -39,6 +38,19 @@
         margin: 4px;
         text-align: center;
         font-size: 0.9rem;
+      }
+
+      ul {
+        margin-top: 20px;
+        padding: 0;
+        list-style-type: none;
+        text-align: center;
+      }
+
+      ul li {
+        margin: 5px 0;
+        font-size: 0.9rem;
+        color: #cccccc;
       }
     </style>
   </head>
@@ -59,15 +71,13 @@
 
     <p id="selected_vid">none</p>
     <div id="ytplayer"></div>
+    <ul id="history_list"></ul>
     <script>
-      // Load the IFrame Player API code asynchronously.
       var tag = document.createElement("script");
       tag.src = "https://www.youtube.com/player_api";
       var firstScriptTag = document.getElementsByTagName("script")[0];
       firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
 
-      // Replace the 'ytplayer' element with an <iframe> and
-      // YouTube player after the API code downloads.
       var player;
       function onYouTubePlayerAPIReady() {
         console.log("onYouTubePlayerAPIReady");
@@ -86,6 +96,9 @@
       function onPlayerStateChange(e) {
         console.log("onPlayerStateChange", e);
         document.title = player.getVideoData()?.title;
+        const id = player.getVideoData()?.video_id;
+        addToHistory(id, document.title);
+
         if (e?.data === 2) {
           setTimeout(() => {
             savePosition();
@@ -101,7 +114,6 @@
       }
 
       function savePosition() {
-        // createCookie('ply_time', player.getCurrentTime(), 1);
         const vid = extractVideoId(player.getVideoUrl());
         const pos = player.getCurrentTime();
         console.log("savePosition", pos);
@@ -109,18 +121,17 @@
       }
 
       function getPosition() {
-        // return readCookie('ply_time') - 0;
         const vid = extractVideoId(player.getVideoUrl());
         return localStorage.getItem("vid-" + vid) - 0;
       }
 
       function onPlayerReady() {
         console.log("onPlayerReady");
-        //debugger;
         onhashchange();
       }
 
       const selected_vid = document.getElementById("selected_vid");
+      const history_list = document.getElementById("history_list");
 
       function onhashchange() {
         console.log("onhashchange");
@@ -184,15 +195,12 @@
         createCookie(name, "", -1);
       }
 
-
       const input_vid = document.getElementById("input_vid");
 
       function select_input_vid() {
         console.log("select_input_vid");
         const str = input_vid.value;
-        // remove input_vid contents
         input_vid.value = "";
-
       }
 
       function apply_input_vid() {
@@ -207,8 +215,6 @@
       function extractVideoId(str) {
         var vid;
         if (str.indexOf("://") !== -1) {
-          // https://www.youtube.com/watch?v=XXXXXXXXX&
-          // https://www.youtube.com/live/XXXXXXXXX?
           const searchParams1 = new URLSearchParams(new URL(str).search);
           vid = searchParams1.get("v");
           if (!vid) {
@@ -224,14 +230,30 @@
       }
 
       function apply_vid(vid) {
-        console.log("apply_vid");
+        console.log("apply_vid", vid);
         if (vid) {
           player.loadVideoById(vid);
           startSeek(100);
+          // addToHistory(vid);
         }
       }
-    </script>
 
-    <script></script>
+      function addToHistory(vid, name) {
+        const listItem = document.createElement("li");
+        listItem.textContent = name + " " + vid;
+
+        const copyButton = document.createElement("button");
+        copyButton.textContent = "Copy";
+        copyButton.style.marginLeft = "10px";
+        copyButton.onclick = function () {
+          navigator.clipboard.writeText(vid).then(() => {
+            // alert("Copied to clipboard!");
+          });
+        };
+
+        listItem.appendChild(copyButton);
+        history_list.appendChild(listItem);
+      }
+    </script>
   </body>
 </html>
