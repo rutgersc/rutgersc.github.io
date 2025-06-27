@@ -12,7 +12,7 @@
       }
 
       input[type="text"] {
-        width: 50%;
+        width: 40%;
         height: 50px;
         font-size: 18px;
         padding: 10px;
@@ -65,14 +65,8 @@
       />
       <input
         type="button"
-        value="Paste"
-        onclick="paste(input_vid)"
-        style="margin-top: 10px; display: block; width: 50%; margin-left: auto; margin-right: auto;"
-      />
-      <input
-        type="button"
         value=">>"
-        onclick="apply_input_vid()" />
+        onclick="apply_input_vid(input_vid.value)" />
     </div>
 
     <div id="ytplayer"></div>
@@ -205,17 +199,19 @@
 
       function select_input_vid() {
         console.log("select_input_vid");
-        const str = input_vid.value;
         input_vid.value = "";
+        navigator.clipboard.readText()
+          .then(text => {
+            input_vid.value = text
+            apply_input_vid(text)
+          });
       }
 
-      function apply_input_vid() {
-        console.log("apply_input_vid");
-        const str = input_vid.value;
-
-        const vid = extractYouTubeId(str);
-
-        window.location.hash = "#" + vid;
+      function apply_input_vid(str) {
+        const video_id = extractYouTubeId(str);
+        if (video_id) {
+          window.location.hash = "#" + video_id;
+        }
       }
 
       function extractYouTubeId(input) {
@@ -261,13 +257,21 @@
         }
       }
 
-      function addToHistory(videoData, name) {
+      function getHistory() {
         const history = JSON.parse(localStorage.getItem("history") || "[]");
+        return history;
+      }
 
-        if (history.length === 0 || history[0].videoData.video_id !== videoData.video_id) {
-          history.unshift({ videoData });
-          localStorage.setItem("history", JSON.stringify(history));
-        }
+      function addToHistory(videoData, name) {
+        const history = getHistory();
+
+        // Remove any existing entry with the same video_id
+        const filteredHistory = history
+          .filter((item) => item.videoData.video_id !== videoData.video_id);
+
+        // Add the new entry to the front
+        filteredHistory.unshift({ videoData });
+        localStorage.setItem("history", JSON.stringify(filteredHistory));
 
         console.log(history);
 
@@ -276,31 +280,38 @@
 
       function renderHistory() {
         history_list.innerHTML = "";
-        const history = JSON.parse(localStorage.getItem("history") || "[]");
+        const history = getHistory();
         console.log("renderHistory", history);
         const renderItem = (videoData) => {
 
           console.log("renderItem", videoData);
-          const listItem = document.createElement("li");
-          listItem.textContent = videoData.author + " => " + videoData.title + " " + videoData.video_id;
+            const listItem = document.createElement("li");
 
-          const copyButton = document.createElement("button");
-          copyButton.textContent = "Copy";
-          copyButton.style.marginLeft = "10px";
-          copyButton.onclick = function () {
-            navigator.clipboard.writeText(videoData.title);
-          };
+            const authorP = document.createElement("p");
+            authorP.textContent = videoData.author;
 
-          listItem.appendChild(copyButton);
-          history_list.appendChild(listItem);
+            const titleP = document.createElement("p");
+            titleP.textContent = videoData.title;
+
+            const idP = document.createElement("p");
+            idP.textContent = videoData.video_id;
+
+            const copyButton = document.createElement("button");
+            copyButton.textContent = "Copy";
+            copyButton.onclick = () => navigator.clipboard.writeText(videoData.title);
+
+            const playButton = document.createElement("button");
+            playButton.textContent = "Play";
+            playButton.onclick = () => apply_input_vid(videoData.video_id);
+
+            listItem.appendChild(authorP);
+            listItem.appendChild(titleP);
+            listItem.appendChild(playButton);
+
+            history_list.appendChild(listItem);
         }
 
         history.forEach(({ videoData }) => { renderItem(videoData); });
-      }
-
-      async function paste(input) {
-          const text = await navigator.clipboard.readText();
-          input.value = text;
       }
 
       function clearHistory() {
