@@ -79,10 +79,10 @@
 
     <div id="ytplayer"></div>
     <div id="timeline-time" style="text-align:center; color:#ccc; font-size:0.95rem; margin-bottom:2px; display:flex; justify-content:center; align-items:center; gap:8px;">
+      <button id="timeline-cancel-btn" title="Cancel seek" style="margin-right:8px; font-size:1.1em; display:none;">❌</button>
       <span id="timeline-time-span"></span>
       <span id="timeline-drag-span" style="color:#6cf06c; display:none; margin-left:8px;"></span>
       <button id="timeline-apply-btn" title="Seek to this time" style="margin-left:8px; font-size:1.1em; display:none;">✅</button>
-      <button id="timeline-cancel-btn" title="Cancel seek" style="margin-left:4px; font-size:1.1em; display:none;">❌</button>
     </div>
     <input
       id="timeline"
@@ -527,6 +527,8 @@
       const handleViewportChange = () => setFullWidth(false);
 
       function setFullWidth(full) {
+        const timelineTime = document.getElementById("timeline-time");
+        
         if (full) {
           ytplayer.style.width = "100%";
           timeline.style.width = "100%";
@@ -538,6 +540,9 @@
           timeline.style.position = "";
           timeline.style.left = "";
           timeline.style.transform = "";
+          timelineTime.style.position = "";
+          timelineTime.style.left = "";
+          timelineTime.style.width = "";
           switchWidthBtn.textContent = "Switch to Viewport Width";
         } else {
           // Use viewport dimensions and position, accounting for zoom and scroll
@@ -556,6 +561,10 @@
           timeline.style.position = "relative";
           timeline.style.left = viewportLeft + "px";
           timeline.style.margin = "10px 0";
+
+          timelineTime.style.position = "relative";
+          timelineTime.style.left = viewportLeft + "px";
+          timelineTime.style.width = viewportWidth + "px";
 
           switchWidthBtn.textContent = "Switch to Full Width";
         }
