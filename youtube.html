@@ -76,7 +76,12 @@
     </div>
 
     <div id="ytplayer"></div>
-    <div id="timeline-time" style="text-align:center; color:#ccc; font-size:0.95rem; margin-bottom:2px;"></div>
+    <div id="timeline-time" style="text-align:center; color:#ccc; font-size:0.95rem; margin-bottom:2px; display:flex; justify-content:center; align-items:center; gap:8px;">
+      <span id="timeline-time-span"></span>
+      <span id="timeline-drag-span" style="color:#6cf06c; display:none; margin-left:8px;"></span>
+      <button id="timeline-apply-btn" title="Seek to this time" style="margin-left:8px; font-size:1.1em; display:none;">✅</button>
+      <button id="timeline-cancel-btn" title="Cancel seek" style="margin-left:4px; font-size:1.1em; display:none;">❌</button>
+    </div>
     <input
       id="timeline"
       type="range"
@@ -146,7 +151,12 @@
 
       var timeline = document.getElementById("timeline");
       var timelineTime = document.getElementById("timeline-time");
+      var timelineTimeSpan = document.getElementById("timeline-time-span");
+      var timelineDragSpan = document.getElementById("timeline-drag-span");
+      var timelineApplyBtn = document.getElementById("timeline-apply-btn");
+      var timelineCancelBtn = document.getElementById("timeline-cancel-btn");
       var timelineDragging = false;
+      var dragValue = 0;
 
       function formatTime(sec) {
         sec = Math.floor(sec);
@@ -164,36 +174,60 @@
         if (!player) return;
         const duration = player.getDuration();
         let current = player.getCurrentTime();
-        if (timelineDragging) {
-          current = timeline.value;
-        }
         if (duration > 0) {
           timeline.max = Math.floor(duration);
           if (!timelineDragging) {
-            timeline.value = Math.floor(player.getCurrentTime());
+            timeline.value = Math.floor(current);
           }
-          timelineTime.textContent = formatTime(current) + " / " + formatTime(duration);
+          timelineTimeSpan.textContent = formatTime(current) + " / " + formatTime(duration);
+          timelineTimeSpan.style.color = "#ccc";
+          if (timelineDragging) {
+            timelineDragSpan.textContent = formatTime(dragValue);
+            timelineDragSpan.style.display = "";
+            timelineApplyBtn.style.display = "";
+            timelineCancelBtn.style.display = "";
+          } else {
+            timelineDragSpan.textContent = "";
+            timelineDragSpan.style.display = "none";
+            timelineApplyBtn.style.display = "none";
+            timelineCancelBtn.style.display = "none";
+          }
         } else {
-          timelineTime.textContent = "--:-- / --:--";
+          timelineTimeSpan.textContent = "--:-- / --:--";
+          timelineTimeSpan.style.color = "#ccc";
+          timelineDragSpan.textContent = "";
+          timelineDragSpan.style.display = "none";
+          timelineApplyBtn.style.display = "none";
+          timelineCancelBtn.style.display = "none";
         }
       }
 
-      // Update timeline every 500ms
       setInterval(updateTimeline, 500);
 
-      // Seek video when user interacts with timeline
       timeline.addEventListener("input", function () {
         timelineDragging = true;
+        dragValue = Number(timeline.value);
         updateTimeline();
       });
 
       timeline.addEventListener("change", function () {
+        // Do not seek immediately; wait for check/cross
+        dragValue = Number(timeline.value);
+        updateTimeline();
+      });
+
+      timelineApplyBtn.onclick = function() {
         if (player && player.seekTo) {
-          player.seekTo(Number(timeline.value), true);
+          player.seekTo(Number(dragValue), true);
         }
         timelineDragging = false;
         updateTimeline();
-      });
+      };
+
+      timelineCancelBtn.onclick = function() {
+        timelineDragging = false;
+        updateTimeline();
+      };
 
       function onPlayerReady() {
         console.log("onPlayerReady");
