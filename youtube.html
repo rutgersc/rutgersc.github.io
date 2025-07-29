@@ -96,6 +96,24 @@
 
     <div style="display: flex; justify-content: center; margin: 10px 0;">
       <button
+        id="fullscreen-btn"
+        style="
+          background: #232323;
+          color: #ff9f40;
+          border: 1px solid #333;
+          border-radius: 8px;
+          font-size: 1rem;
+          font-weight: bold;
+          padding: 8px 24px;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+          cursor: pointer;
+          transition: background 0.2s, color 0.2s;
+          margin-right: 10px;
+        "
+        onmouseover="this.style.background='#1a1a1a';this.style.color='#fff';"
+        onmouseout="this.style.background='#232323';this.style.color='#ff9f40';"
+      >Fullscreen</button>
+      <button
         id="switch-width-btn"
         style="
           background: #232323;
@@ -522,6 +540,7 @@
       }
 
       const switchWidthBtn = document.getElementById("switch-width-btn");
+      const fullscreenBtn = document.getElementById("fullscreen-btn");
       let isFullWidth = true;
 
       const handleViewportChange = () => setFullWidth(false);
@@ -579,6 +598,21 @@
         } else {
           window.visualViewport.addEventListener("resize", handleViewportChange);
           window.visualViewport.addEventListener("scroll", handleViewportChange);
+        }
+      };
+
+      fullscreenBtn.onclick = function() {
+        if (player && player.getIframe) {
+          const iframe = player.getIframe();
+          if (iframe.requestFullscreen) {
+            iframe.requestFullscreen();
+          } else if (iframe.webkitRequestFullscreen) {
+            iframe.webkitRequestFullscreen();
+          } else if (iframe.mozRequestFullScreen) {
+            iframe.mozRequestFullScreen();
+          } else if (iframe.msRequestFullscreen) {
+            iframe.msRequestFullscreen();
+          }
         }
       };
 
