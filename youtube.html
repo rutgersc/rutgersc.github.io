@@ -2,6 +2,7 @@
   <head>
     <style>
       body {
+        margin-top: 50px;
         background-color: #121212;
         color: #ffffff;
       }
@@ -385,32 +386,96 @@
         const history = getHistory();
         console.log("renderHistory", history);
         const renderItem = (videoData) => {
+          const listItem = document.createElement("li");
+          listItem.style.background = "#232323";
+          listItem.style.borderRadius = "8px";
+          listItem.style.margin = "12px auto";
+          listItem.style.padding = "10px 16px";
+          listItem.style.maxWidth = "480px";
+          listItem.style.boxShadow = "0 2px 8px rgba(0,0,0,0.12)";
+          listItem.style.display = "flex";
+          listItem.style.flexDirection = "column";
+          listItem.style.alignItems = "flex-start";
+          listItem.style.gap = "4px";
+          listItem.style.border = "1px solid #333";
 
-          console.log("renderItem", videoData);
-            const listItem = document.createElement("li");
+          // Top row: author and play button
+          const topRow = document.createElement("div");
+          topRow.style.display = "flex";
+          topRow.style.alignItems = "center";
+          topRow.style.width = "100%";
+          topRow.style.justifyContent = "space-between";
 
-            const authorP = document.createElement("p");
-            authorP.textContent = videoData.author;
+          const authorP = document.createElement("span");
+          authorP.textContent = videoData.author;
+          authorP.style.fontWeight = "bold";
+          authorP.style.fontSize = "1rem";
+          authorP.style.color = "#8ecae6";
 
-            const titleP = document.createElement("p");
-            titleP.textContent = videoData.title;
+          const playButton = document.createElement("button");
+          playButton.textContent = "▶️";
+          playButton.title = "Play";
+          playButton.style.background = "#2d6a4f";
+          playButton.style.color = "#fff";
+          playButton.style.border = "none";
+          playButton.style.borderRadius = "4px";
+          playButton.style.padding = "4px 10px";
+          playButton.style.cursor = "pointer";
+          playButton.style.fontSize = "1.1em";
+          playButton.style.marginLeft = "8px";
+          playButton.onmouseenter = () => playButton.style.background = "#40916c";
+          playButton.onmouseleave = () => playButton.style.background = "#2d6a4f";
+          playButton.onclick = () => apply_input_vid(videoData.video_id);
 
-            const idP = document.createElement("p");
-            idP.textContent = videoData.video_id;
+          topRow.appendChild(authorP);
+          topRow.appendChild(playButton);
 
-            const copyButton = document.createElement("button");
-            copyButton.textContent = "Copy";
-            copyButton.onclick = () => navigator.clipboard.writeText(videoData.title);
+          // Title row
+          const titleP = document.createElement("span");
+          titleP.textContent = videoData.title;
+          titleP.style.fontSize = "1.05rem";
+          titleP.style.fontWeight = "500";
+          titleP.style.color = "#fff";
+          titleP.style.marginTop = "2px";
+          titleP.style.marginBottom = "2px";
+          titleP.style.wordBreak = "break-word";
 
-            const playButton = document.createElement("button");
-            playButton.textContent = "Play";
-            playButton.onclick = () => apply_input_vid(videoData.video_id);
+          // Bottom row: video id and copy button
+          const bottomRow = document.createElement("div");
+          bottomRow.style.display = "flex";
+          bottomRow.style.alignItems = "center";
+          bottomRow.style.gap = "8px";
+          bottomRow.style.marginTop = "2px";
 
-            listItem.appendChild(authorP);
-            listItem.appendChild(titleP);
-            listItem.appendChild(playButton);
+          const idP = document.createElement("span");
+          idP.textContent = videoData.video_id;
+          idP.style.fontSize = "0.85rem";
+          idP.style.color = "#bdbdbd";
+          idP.style.fontFamily = "monospace";
 
-            history_list.appendChild(listItem);
+          const copyButton = document.createElement("button");
+          copyButton.textContent = "Copy";
+          copyButton.title = "Copy title";
+          copyButton.style.background = "#495057";
+          copyButton.style.color = "#fff";
+          copyButton.style.border = "none";
+          copyButton.style.borderRadius = "4px";
+          copyButton.style.padding = "2px 10px";
+          copyButton.style.cursor = "pointer";
+          copyButton.style.fontSize = "0.95em";
+          copyButton.onmouseenter = () => copyButton.style.background = "#6c757d";
+          copyButton.onmouseleave = () => copyButton.style.background = "#495057";
+          copyButton.onclick = () => navigator.clipboard.writeText(videoData.title);
+
+          bottomRow.appendChild(idP);
+          bottomRow.appendChild(copyButton);
+
+          // Assemble
+          listItem.appendChild(topRow);
+          listItem.appendChild(titleP);
+          listItem.appendChild(bottomRow);
+
+          history_list.appendChild(listItem);
         }
 
         history.forEach(({ videoData }) => { renderItem(videoData); });
