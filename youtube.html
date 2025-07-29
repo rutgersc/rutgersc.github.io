@@ -530,18 +530,14 @@
         if (full) {
           ytplayer.style.width = "100%";
           timeline.style.width = "100%";
-          // ytplayer.style.maxWidth = "";
-          // timeline.style.maxWidth = "";
           ytplayer.style.margin = "";
           timeline.style.margin = "";
-          switchWidthBtn.textContent = "Switch to Fixed Width";
+          switchWidthBtn.textContent = "Switch to Viewport Width";
         } else {
           // Use 100% of the visual viewport width, taking zoom into account
           const visualWidth = window.visualViewport ? window.visualViewport.width : window.innerWidth;
           ytplayer.style.width = visualWidth + "px";
           timeline.style.width = visualWidth + "px";
-          // ytplayer.style.maxWidth = "100vw";
-          // timeline.style.maxWidth = "100vw";
           ytplayer.style.margin = "0 auto";
           timeline.style.margin = "0 auto";
           switchWidthBtn.textContent = "Switch to Full Width";
