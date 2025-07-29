@@ -76,6 +76,7 @@
     </div>
 
     <div id="ytplayer"></div>
+    <div id="timeline-time" style="text-align:center; color:#ccc; font-size:0.95rem; margin-bottom:2px;"></div>
     <input
       id="timeline"
       type="range"
@@ -144,14 +145,31 @@
       }
 
       var timeline = document.getElementById("timeline");
+      var timelineTime = document.getElementById("timeline-time");
       var timelineDragging = false;
 
+      function formatTime(sec) {
+        sec = Math.floor(sec);
+        const m = Math.floor(sec / 60);
+        const s = sec % 60;
+        return m + ":" + (s < 10 ? "0" : "") + s;
+      }
+
       function updateTimeline() {
-        if (!player || timelineDragging) return;
+        if (!player) return;
         const duration = player.getDuration();
+        let current = player.getCurrentTime();
+        if (timelineDragging) {
+          current = timeline.value;
+        }
         if (duration > 0) {
           timeline.max = Math.floor(duration);
-          timeline.value = Math.floor(player.getCurrentTime());
+          if (!timelineDragging) {
+            timeline.value = Math.floor(player.getCurrentTime());
+          }
+          timelineTime.textContent = formatTime(current) + " / " + formatTime(duration);
+        } else {
+          timelineTime.textContent = "--:-- / --:--";
         }
       }
 
@@ -161,6 +179,7 @@
       // Seek video when user interacts with timeline
       timeline.addEventListener("input", function () {
         timelineDragging = true;
+        updateTimeline();
       });
 
       timeline.addEventListener("change", function () {
@@ -168,6 +187,7 @@
           player.seekTo(Number(timeline.value), true);
         }
         timelineDragging = false;
+        updateTimeline();
       });
 
       function onPlayerReady() {
