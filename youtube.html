@@ -11,13 +11,19 @@
         width: 100%;
       }
 
+      .input-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+
       input[type="text"] {
         width: 40%;
         height: 50px;
         font-size: 18px;
         padding: 10px;
         display: block;
-        margin: auto auto;
+        margin-bottom: 8px;
 
         background-color: #2d2d2d;
         color: #ffffff;
@@ -25,7 +31,7 @@
       }
 
       input[type="button"] {
-        width: 100%;
+        width: 50%;
         height: 30px;
         font-size: 14px;
         background-color: #4e4e4e;
@@ -56,7 +62,7 @@
   </head>
 
   <body onhashchange="onhashchange()">
-    <div>
+    <div class="input-container">
       <input
         id="input_vid"
         type="text"
@@ -70,6 +76,15 @@
     </div>
 
     <div id="ytplayer"></div>
+    <input
+      id="timeline"
+      type="range"
+      min="0"
+      max="100"
+      value="0"
+      step="1"
+      style="width: 100%; margin: 10px 0;"
+    />
     <ul id="history_list"></ul>
     <input
       type="button"
@@ -128,9 +143,37 @@
         return localStorage.getItem("vid-" + vid) - 0;
       }
 
+      var timeline = document.getElementById("timeline");
+      var timelineDragging = false;
+
+      function updateTimeline() {
+        if (!player || timelineDragging) return;
+        const duration = player.getDuration();
+        if (duration > 0) {
+          timeline.max = Math.floor(duration);
+          timeline.value = Math.floor(player.getCurrentTime());
+        }
+      }
+
+      // Update timeline every 500ms
+      setInterval(updateTimeline, 500);
+
+      // Seek video when user interacts with timeline
+      timeline.addEventListener("input", function () {
+        timelineDragging = true;
+      });
+
+      timeline.addEventListener("change", function () {
+        if (player && player.seekTo) {
+          player.seekTo(Number(timeline.value), true);
+        }
+        timelineDragging = false;
+      });
+
       function onPlayerReady() {
         console.log("onPlayerReady");
         onhashchange();
+        updateTimeline();
       }
 
       const history_list = document.getElementById("history_list");
