@@ -521,44 +521,59 @@
         renderHistory();
       }
 
-      // --- Switch width logic ---
-      // const ytplayer = document.getElementById("ytplayer");
       const switchWidthBtn = document.getElementById("switch-width-btn");
       let isFullWidth = true;
+
+      const handleViewportChange = () => setFullWidth(false);
 
       function setFullWidth(full) {
         if (full) {
           ytplayer.style.width = "100%";
           timeline.style.width = "100%";
           ytplayer.style.margin = "";
+          ytplayer.style.position = "";
+          ytplayer.style.left = "";
+          ytplayer.style.transform = "";
           timeline.style.margin = "";
+          timeline.style.position = "";
+          timeline.style.left = "";
+          timeline.style.transform = "";
           switchWidthBtn.textContent = "Switch to Viewport Width";
         } else {
-          // Use 100% of the visual viewport width, taking zoom into account
-          const visualWidth = window.visualViewport ? window.visualViewport.width : window.innerWidth;
-          ytplayer.style.width = visualWidth + "px";
-          timeline.style.width = visualWidth + "px";
-          ytplayer.style.margin = "0 auto";
-          timeline.style.margin = "0 auto";
+          // Use viewport dimensions and position, accounting for zoom and scroll
+          const viewportWidth = window.visualViewport.width;
+          const viewportLeft = window.visualViewport.offsetLeft;
+
+          // Set width to viewport width
+          ytplayer.style.width = viewportWidth + "px";
+          timeline.style.width = viewportWidth + "px";
+
+          // Position elements to be centered in the current viewport
+          ytplayer.style.position = "relative";
+          ytplayer.style.left = viewportLeft + "px";
+          ytplayer.style.margin = "0";
+
+          timeline.style.position = "relative";
+          timeline.style.left = viewportLeft + "px";
+          timeline.style.margin = "10px 0";
+
           switchWidthBtn.textContent = "Switch to Full Width";
         }
         isFullWidth = full;
       }
 
       switchWidthBtn.onclick = function() {
-        setFullWidth(!isFullWidth);
-      };
+        const newFullWidth = !isFullWidth;
+        setFullWidth(newFullWidth);
 
-      // Update width on viewport resize if in fixed mode
-      if (window.visualViewport) {
-        window.visualViewport.addEventListener("resize", function() {
-          if (!isFullWidth) setFullWidth(false);
-        });
-      } else {
-        window.addEventListener("resize", function() {
-          if (!isFullWidth) setFullWidth(false);
-        });
-      }
+        if (newFullWidth) {
+          window.visualViewport.removeEventListener("resize", handleViewportChange);
+          window.visualViewport.removeEventListener("scroll", handleViewportChange);
+        } else {
+          window.visualViewport.addEventListener("resize", handleViewportChange);
+          window.visualViewport.addEventListener("scroll", handleViewportChange);
+        }
+      };
 
       // Set initial state
       setFullWidth(true);
