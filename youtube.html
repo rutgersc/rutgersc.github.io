@@ -2,9 +2,10 @@
   <head>
     <style>
       body {
-        margin-top: 50px;
+        margin-top: 250px;
         background-color: #121212;
         color: #ffffff;
+        padding-bottom: 150px;
       }
 
       #ytplayer {
@@ -92,12 +93,50 @@
       step="1"
       style="width: 100%; margin: 10px 0;"
     />
+
+    <div style="display: flex; justify-content: center; margin: 10px 0;">
+      <button
+        id="switch-width-btn"
+        style="
+          background: #232323;
+          color: #8ecae6;
+          border: 1px solid #333;
+          border-radius: 8px;
+          font-size: 1rem;
+          font-weight: bold;
+          padding: 8px 24px;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+          cursor: pointer;
+          transition: background 0.2s, color 0.2s;
+        "
+        onmouseover="this.style.background='#1a1a1a';this.style.color='#fff';"
+        onmouseout="this.style.background='#232323';this.style.color='#8ecae6';"
+      >Switch to Fixed Width</button>
+    </div>
+
     <ul id="history_list"></ul>
     <input
       type="button"
+      id="clear-history-btn"
       value="Clear History"
       onclick="clearHistory()"
-      style="display: block; margin: 10px auto; width: 50%;"
+      style="
+        display: block;
+        margin: 18px auto 10px auto;
+        width: 480px;
+        max-width: 90vw;
+        background: #232323;
+        color: #ff6b6b;
+        border: 1px solid #333;
+        border-radius: 8px;
+        font-size: 1rem;
+        font-weight: bold;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+        cursor: pointer;
+        transition: background 0.2s, color 0.2s;
+      "
+      onmouseover="this.style.background='#3a2323';this.style.color='#fff';"
+      onmouseout="this.style.background='#232323';this.style.color='#ff6b6b';"
     />
     <script>
       var tag = document.createElement("script");
@@ -399,7 +438,7 @@
           listItem.style.gap = "4px";
           listItem.style.border = "1px solid #333";
 
-          // Top row: author and play button
+          // Top row: author, id (clickable), play button
           const topRow = document.createElement("div");
           topRow.style.display = "flex";
           topRow.style.alignItems = "center";
@@ -411,6 +450,25 @@
           authorP.style.fontWeight = "bold";
           authorP.style.fontSize = "1rem";
           authorP.style.color = "#8ecae6";
+
+          // id (clickable to copy)
+          const idP = document.createElement("span");
+          idP.textContent = videoData.video_id;
+          idP.style.fontSize = "0.85rem";
+          idP.style.color = "#bdbdbd";
+          idP.style.fontFamily = "monospace";
+          idP.style.marginLeft = "12px";
+          idP.style.cursor = "pointer";
+          idP.title = "Click to copy ID";
+          idP.onmouseenter = () => {
+            idP.style.textDecoration = "underline";
+            idP.style.color = "#ffd166";
+          };
+          idP.onmouseleave = () => {
+            idP.style.textDecoration = "none";
+            idP.style.color = "#bdbdbd";
+          };
+          idP.onclick = () => navigator.clipboard.writeText(videoData.video_id);
 
           const playButton = document.createElement("button");
           playButton.textContent = "▶️";
@@ -427,7 +485,14 @@
           playButton.onmouseleave = () => playButton.style.background = "#2d6a4f";
           playButton.onclick = () => apply_input_vid(videoData.video_id);
 
-          topRow.appendChild(authorP);
+          // Assemble top row
+          const leftGroup = document.createElement("span");
+          leftGroup.style.display = "flex";
+          leftGroup.style.alignItems = "center";
+          leftGroup.appendChild(authorP);
+          leftGroup.appendChild(idP);
+
+          topRow.appendChild(leftGroup);
           topRow.appendChild(playButton);
 
           // Title row
@@ -440,40 +505,9 @@
           titleP.style.marginBottom = "2px";
           titleP.style.wordBreak = "break-word";
 
-          // Bottom row: video id and copy button
-          const bottomRow = document.createElement("div");
-          bottomRow.style.display = "flex";
-          bottomRow.style.alignItems = "center";
-          bottomRow.style.gap = "8px";
-          bottomRow.style.marginTop = "2px";
-
-          const idP = document.createElement("span");
-          idP.textContent = videoData.video_id;
-          idP.style.fontSize = "0.85rem";
-          idP.style.color = "#bdbdbd";
-          idP.style.fontFamily = "monospace";
-
-          const copyButton = document.createElement("button");
-          copyButton.textContent = "Copy";
-          copyButton.title = "Copy title";
-          copyButton.style.background = "#495057";
-          copyButton.style.color = "#fff";
-          copyButton.style.border = "none";
-          copyButton.style.borderRadius = "4px";
-          copyButton.style.padding = "2px 10px";
-          copyButton.style.cursor = "pointer";
-          copyButton.style.fontSize = "0.95em";
-          copyButton.onmouseenter = () => copyButton.style.background = "#6c757d";
-          copyButton.onmouseleave = () => copyButton.style.background = "#495057";
-          copyButton.onclick = () => navigator.clipboard.writeText(videoData.title);
-
-          bottomRow.appendChild(idP);
-          bottomRow.appendChild(copyButton);
-
           // Assemble
           listItem.appendChild(topRow);
           listItem.appendChild(titleP);
-          listItem.appendChild(bottomRow);
 
           history_list.appendChild(listItem);
         }
@@ -486,6 +520,52 @@
         localStorage.removeItem("history");
         renderHistory();
       }
+
+      // --- Switch width logic ---
+      // const ytplayer = document.getElementById("ytplayer");
+      const switchWidthBtn = document.getElementById("switch-width-btn");
+      let isFullWidth = true;
+
+      function setFullWidth(full) {
+        if (full) {
+          ytplayer.style.width = "100%";
+          timeline.style.width = "100%";
+          // ytplayer.style.maxWidth = "";
+          // timeline.style.maxWidth = "";
+          ytplayer.style.margin = "";
+          timeline.style.margin = "";
+          switchWidthBtn.textContent = "Switch to Fixed Width";
+        } else {
+          // Use 100% of the visual viewport width, taking zoom into account
+          const visualWidth = window.visualViewport ? window.visualViewport.width : window.innerWidth;
+          ytplayer.style.width = visualWidth + "px";
+          timeline.style.width = visualWidth + "px";
+          // ytplayer.style.maxWidth = "100vw";
+          // timeline.style.maxWidth = "100vw";
+          ytplayer.style.margin = "0 auto";
+          timeline.style.margin = "0 auto";
+          switchWidthBtn.textContent = "Switch to Full Width";
+        }
+        isFullWidth = full;
+      }
+
+      switchWidthBtn.onclick = function() {
+        setFullWidth(!isFullWidth);
+      };
+
+      // Update width on viewport resize if in fixed mode
+      if (window.visualViewport) {
+        window.visualViewport.addEventListener("resize", function() {
+          if (!isFullWidth) setFullWidth(false);
+        });
+      } else {
+        window.addEventListener("resize", function() {
+          if (!isFullWidth) setFullWidth(false);
+        });
+      }
+
+      // Set initial state
+      setFullWidth(true);
 
     </script>
   </body>
