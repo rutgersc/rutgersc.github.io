@@ -211,6 +211,7 @@
       }
 
       function updateTimeline() {
+        console.log("updating timeline")
         if (!player) return;
         const duration = player.getDuration();
         let current = player.getCurrentTime();
@@ -251,7 +252,6 @@
       });
 
       timeline.addEventListener("change", function () {
-        // Do not seek immediately; wait for check/cross
         dragValue = Number(timeline.value);
         updateTimeline();
       });
@@ -527,8 +527,6 @@
       const handleViewportChange = () => setFullWidth(false);
 
       function setFullWidth(full) {
-        const timelineTime = document.getElementById("timeline-time");
-        
         if (full) {
           ytplayer.style.width = "100%";
           timeline.style.width = "100%";
