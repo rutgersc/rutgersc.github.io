@@ -114,24 +114,6 @@
         onmouseout="this.style.background='#232323';this.style.color='#6cf06c';"
       >Play/Pause</button>
       <button
-        id="fullscreen-btn"
-        style="
-          background: #232323;
-          color: #ff9f40;
-          border: 1px solid #333;
-          border-radius: 8px;
-          font-size: 1rem;
-          font-weight: bold;
-          padding: 8px 24px;
-          box-shadow: 0 2px 8px rgba(0,0,0,0.12);
-          cursor: pointer;
-          transition: background 0.2s, color 0.2s;
-          margin-right: 10px;
-        "
-        onmouseover="this.style.background='#1a1a1a';this.style.color='#fff';"
-        onmouseout="this.style.background='#232323';this.style.color='#ff9f40';"
-      >Fullscreen</button>
-      <button
         id="switch-width-btn"
         style="
           background: #232323;
@@ -522,21 +504,51 @@
           topRow.style.width = "100%";
           topRow.style.justifyContent = "space-between";
 
-          const authorP = document.createElement("span");
+          const authorP = document.createElement("a");
           authorP.textContent = videoData.author;
           authorP.style.fontWeight = "bold";
           authorP.style.fontSize = "1rem";
           authorP.style.color = "#8ecae6";
+          authorP.style.cursor = "pointer";
+          authorP.style.textDecoration = "none";
+          authorP.title = "Visit channel";
 
-          // id (clickable to copy)
-          const idP = document.createElement("span");
+          // Set the href based on available data
+          if (videoData.author_url) {
+            authorP.href = videoData.author_url;
+          } else if (videoData.author_id) {
+            authorP.href = `https://www.youtube.com/channel/${videoData.author_id}`;
+          } else {
+            // Fallback: search for the channel
+            authorP.href = `https://www.youtube.com/results?search_query=${encodeURIComponent(videoData.author)}`;
+          }
+
+          authorP.target = "_blank";
+          authorP.rel = "noopener noreferrer";
+
+          authorP.onmouseenter = () => {
+            authorP.style.textDecoration = "underline";
+            authorP.style.color = "#ffd166";
+          };
+          authorP.onmouseleave = () => {
+            authorP.style.textDecoration = "none";
+            authorP.style.color = "#8ecae6";
+          };
+
+          // id (clickable to open video)
+          const idP = document.createElement("a");
           idP.textContent = videoData.video_id;
           idP.style.fontSize = "0.85rem";
           idP.style.color = "#bdbdbd";
           idP.style.fontFamily = "monospace";
           idP.style.marginLeft = "12px";
           idP.style.cursor = "pointer";
-          idP.title = "Click to copy ID";
+          idP.style.textDecoration = "none";
+          idP.title = "Open video in new tab";
+          idP.href = `https://www.youtube.com/watch?v=${videoData.video_id}`;
+          idP.target = "_blank";
+          idP.rel = "noopener noreferrer";
+
           idP.onmouseenter = () => {
             idP.style.textDecoration = "underline";
             idP.style.color = "#ffd166";
@@ -545,7 +557,6 @@
             idP.style.textDecoration = "none";
             idP.style.color = "#bdbdbd";
           };
-          idP.onclick = () => navigator.clipboard.writeText(videoData.video_id);
 
           const playButton = document.createElement("button");
           playButton.textContent = "▶️";
@@ -600,7 +611,6 @@
       }
 
       const switchWidthBtn = document.getElementById("switch-width-btn");
-      const fullscreenBtn = document.getElementById("fullscreen-btn");
       let isFullWidth = true;
 
       const handleViewportChange = () => setFullWidth(false);
@@ -658,18 +668,6 @@
         } else {
           window.visualViewport.addEventListener("resize", handleViewportChange);
           window.visualViewport.addEventListener("scroll", handleViewportChange);
-        }
-      };
-
-      fullscreenBtn.onclick = function() {
-        if (player && player.toggleFullscreen) {
-          try {
-            player.toggleFullscreen().catch(function(error) {
-              console.error('Fullscreen toggle failed:', error);
-            });
-          } catch (error) {
-            console.error('Fullscreen toggle error:', error);
-          }
         }
       };
 
