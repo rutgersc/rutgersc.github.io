@@ -96,6 +96,24 @@
 
     <div style="display: flex; justify-content: center; margin: 10px 0;">
       <button
+        id="play-pause-btn"
+        style="
+          background: #232323;
+          color: #6cf06c;
+          border: 1px solid #333;
+          border-radius: 8px;
+          font-size: 1rem;
+          font-weight: bold;
+          padding: 8px 24px;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+          cursor: pointer;
+          transition: background 0.2s, color 0.2s;
+          margin-right: 10px;
+        "
+        onmouseover="this.style.background='#1a1a1a';this.style.color='#fff';"
+        onmouseout="this.style.background='#232323';this.style.color='#6cf06c';"
+      >Play/Pause</button>
+      <button
         id="fullscreen-btn"
         style="
           background: #232323;
@@ -176,10 +194,13 @@
       }
 
       var savingTimer;
+      var currentPlayerState = -1;
 
       function onPlayerStateChange(e) {
         console.log("onPlayerStateChange", e);
+        currentPlayerState = e.data;
         document.title = player.getVideoData()?.title;
+        updatePlayPauseButton();
 
         if (e?.data === 2) {
           setTimeout(() => {
@@ -287,10 +308,48 @@
         updateTimeline();
       };
 
+      // Play/Pause button functionality
+      const playPauseBtn = document.getElementById("play-pause-btn");
+
+      function updatePlayPauseButton() {
+        if (!playPauseBtn) return;
+
+        // PlayerState: 1 = playing, 2 = paused
+        if (currentPlayerState === 1) {
+          playPauseBtn.textContent = "Pause";
+          playPauseBtn.style.color = "#ff6b6b";
+          playPauseBtn.onmouseout = function() {
+            this.style.background='#232323';
+            this.style.color='#ff6b6b';
+          };
+        } else {
+          playPauseBtn.textContent = "Play";
+          playPauseBtn.style.color = "#6cf06c";
+          playPauseBtn.onmouseout = function() {
+            this.style.background='#232323';
+            this.style.color='#6cf06c';
+          };
+        }
+      }
+
+      playPauseBtn.onclick = function() {
+        if (!player) return;
+
+        const state = player.getPlayerState();
+        if (state === 1) {
+          // Currently playing, so pause
+          player.pauseVideo();
+        } else {
+          // Currently paused or stopped, so play
+          player.playVideo();
+        }
+      };
+
       function onPlayerReady() {
         console.log("onPlayerReady");
         onhashchange();
         updateTimeline();
+        updatePlayPauseButton();
       }
 
       const history_list = document.getElementById("history_list");
@@ -523,6 +582,7 @@
           titleP.style.marginBottom = "2px";
           titleP.style.wordBreak = "break-word";
 
+
           // Assemble
           listItem.appendChild(topRow);
           listItem.appendChild(titleP);
@@ -602,16 +662,13 @@
       };
 
       fullscreenBtn.onclick = function() {
-        if (player && player.getIframe) {
-          const iframe = player.getIframe();
-          if (iframe.requestFullscreen) {
-            iframe.requestFullscreen();
-          } else if (iframe.webkitRequestFullscreen) {
-            iframe.webkitRequestFullscreen();
-          } else if (iframe.mozRequestFullScreen) {
-            iframe.mozRequestFullScreen();
-          } else if (iframe.msRequestFullscreen) {
-            iframe.msRequestFullscreen();
+        if (player && player.toggleFullscreen) {
+          try {
+            player.toggleFullscreen().catch(function(error) {
+              console.error('Fullscreen toggle failed:', error);
+            });
+          } catch (error) {
+            console.error('Fullscreen toggle error:', error);
           }
         }
       };
