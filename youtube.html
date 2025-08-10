@@ -227,6 +227,26 @@
         }
       }
 
+      function getTimeAgo(date) {
+        const now = new Date();
+        const diffMs = now.getTime() - date.getTime();
+        const diffSeconds = Math.floor(diffMs / 1000);
+        const diffMinutes = Math.floor(diffSeconds / 60);
+        const diffHours = Math.floor(diffMinutes / 60);
+        const diffDays = Math.floor(diffHours / 24);
+        const diffWeeks = Math.floor(diffDays / 7);
+        const diffMonths = Math.floor(diffDays / 30);
+        const diffYears = Math.floor(diffDays / 365);
+
+        if (diffSeconds < 60) return "just now";
+        if (diffMinutes < 60) return `${diffMinutes} minute${diffMinutes !== 1 ? 's' : ''} ago`;
+        if (diffHours < 24) return `${diffHours} hour${diffHours !== 1 ? 's' : ''} ago`;
+        if (diffDays < 7) return `${diffDays} day${diffDays !== 1 ? 's' : ''} ago`;
+        if (diffWeeks < 4) return `${diffWeeks} week${diffWeeks !== 1 ? 's' : ''} ago`;
+        if (diffMonths < 12) return `${diffMonths} month${diffMonths !== 1 ? 's' : ''} ago`;
+        return `${diffYears} year${diffYears !== 1 ? 's' : ''} ago`;
+      }
+
       function updateTimeline() {
         console.log("updating timeline")
         if (!player) return;
@@ -466,8 +486,9 @@
         const filteredHistory = history
           .filter((item) => item.videoData.video_id !== videoData.video_id);
 
-        // Add the new entry to the front
-        filteredHistory.unshift({ videoData });
+        // Add the new entry to the front with timestamp
+        const timestamp = new Date().toISOString();
+        filteredHistory.unshift({ videoData, timestamp });
         localStorage.setItem("history", JSON.stringify(filteredHistory));
 
         console.log(history);
@@ -479,7 +500,7 @@
         history_list.innerHTML = "";
         const history = getHistory();
         console.log("renderHistory", history);
-        const renderItem = (videoData) => {
+        const renderItem = (videoData, timestamp) => {
           const listItem = document.createElement("li");
           listItem.style.background = "#232323";
           listItem.style.borderRadius = "8px";
@@ -590,6 +611,19 @@
           titleP.style.wordBreak = "break-word";
 
 
+          // Add timestamp if available
+          if (timestamp) {
+            const timestampP = document.createElement("span");
+            const date = new Date(timestamp);
+            const timeAgo = getTimeAgo(date);
+            timestampP.textContent = `Watched ${timeAgo}`;
+            timestampP.style.fontSize = "0.8rem";
+            timestampP.style.color = "#888";
+            timestampP.style.fontStyle = "italic";
+            timestampP.style.marginTop = "4px";
+            listItem.appendChild(timestampP);
+          }
+
           // Assemble
           listItem.appendChild(topRow);
           listItem.appendChild(titleP);
@@ -597,7 +631,7 @@
           history_list.appendChild(listItem);
         }
 
-        history.forEach(({ videoData }) => { renderItem(videoData); });
+        history.forEach(({ videoData, timestamp }) => { renderItem(videoData, timestamp); });
       }
 
       function clearHistory() {
