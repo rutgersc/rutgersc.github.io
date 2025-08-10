@@ -575,6 +575,18 @@
             idP.style.color = "#bdbdbd";
           };
 
+          // Add timestamp if available
+          const timestampSpan = document.createElement("span");
+          if (timestamp) {
+            const date = new Date(timestamp);
+            const timeAgo = getTimeAgo(date);
+            timestampSpan.textContent = timeAgo;
+            timestampSpan.style.fontSize = "0.8rem";
+            timestampSpan.style.color = "#888";
+            timestampSpan.style.fontStyle = "italic";
+            timestampSpan.style.marginLeft = "12px";
+          }
+
           const playButton = document.createElement("button");
           playButton.textContent = "▶️";
           playButton.title = "Play";
@@ -596,6 +608,9 @@
           leftGroup.style.alignItems = "center";
           leftGroup.appendChild(authorP);
           leftGroup.appendChild(idP);
+          if (timestamp) {
+            leftGroup.appendChild(timestampSpan);
+          }
 
           topRow.appendChild(leftGroup);
           topRow.appendChild(playButton);
@@ -610,19 +625,6 @@
           titleP.style.marginBottom = "2px";
           titleP.style.wordBreak = "break-word";
 
-
-          // Add timestamp if available
-          if (timestamp) {
-            const timestampP = document.createElement("span");
-            const date = new Date(timestamp);
-            const timeAgo = getTimeAgo(date);
-            timestampP.textContent = `Watched ${timeAgo}`;
-            timestampP.style.fontSize = "0.8rem";
-            timestampP.style.color = "#888";
-            timestampP.style.fontStyle = "italic";
-            timestampP.style.marginTop = "4px";
-            listItem.appendChild(timestampP);
-          }
 
           // Assemble
           listItem.appendChild(topRow);
