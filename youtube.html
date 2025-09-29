@@ -460,6 +460,21 @@
         return null; // couldn't extract ID
       }
 
+      function extractChannelIdFromText(text) {
+        try {
+          if (!text) return null;
+          let m = text.match(/https:\/\/www\.youtube\.com\/channel\/(UC[\w-]+)/);
+          if (m) return m[1];
+          m = text.match(/"channelId":"(UC[^"]+)"/);
+          if (m) return m[1];
+          m = text.match(/"externalId":"(UC[^"]+)"/);
+          if (m) return m[1];
+          m = text.match(/"browseId":"(UC[^"]+)"/);
+          if (m) return m[1];
+        } catch (e) {}
+        return null;
+      }
+
       async function resolveChannelDetails(videoId) {
         try {
           const cacheKey = `channelDetails:${videoId}`;
@@ -478,14 +493,22 @@
                   const u = new URL(author_url);
                   const handlePathMatch = (u.pathname || "").match(/\/@[^/]+/);
                   if (handlePathMatch) {
-                    const proxyUrl = `https://r.jina.ai/http://www.youtube.com${handlePathMatch[0]}`;
-                    const pageRes = await fetch(proxyUrl);
-                    if (pageRes.ok) {
-                      const text = await pageRes.text();
-                      let m2 = text.match(/https:\/\/www\.youtube\.com\/channel\/(UC[\w-]+)/);
-                      if (!m2) m2 = text.match(/"channelId":"(UC[^"]+)"/);
-                      if (!m2) m2 = text.match(/"externalId":"(UC[^"]+)"/);
-                      if (m2) channelId = m2[1];
+                    const handlePath = handlePathMatch[0];
+                    // Try both http and https via r.jina.ai, and also the about page
+                    const candidateUrls = [
+                      `https://r.jina.ai/http://www.youtube.com${handlePath}`,
+                      `https://r.jina.ai/https://www.youtube.com${handlePath}`,
+                      `https://r.jina.ai/http://www.youtube.com${handlePath}/about`,
+                      `https://r.jina.ai/https://www.youtube.com${handlePath}/about`
+                    ];
+                    for (const url of candidateUrls) {
+                      try {
+                        const pageRes = await fetch(url);
+                        if (!pageRes.ok) continue;
+                        const text = await pageRes.text();
+                        const found = extractChannelIdFromText(text);
+                        if (found) { channelId = found; break; }
+                      } catch (e) {}
                     }
                   }
                 } catch (e) {}
@@ -775,25 +798,24 @@
                   const handleMatch = path.match(/\/@[^/]+/);
                   if (handleMatch) {
                     const handlePath = handleMatch[0];
-                    const proxyUrl = `https://r.jina.ai/http://www.youtube.com${handlePath}`;
-                    const pageRes = await fetch(proxyUrl);
-                    if (pageRes.ok) {
-                      const pageText = await pageRes.text();
-                      // Try canonical channel link
-                      let m = pageText.match(/https:\/\/www\.youtube\.com\/channel\/(UC[\w-]+)/);
-                      if (!m) {
-                        // Try JSON blobs that contain channelId
-                        m = pageText.match(/"channelId":"(UC[^"]+)"/);
-                      }
-                      if (!m) {
-                        // Some pages expose externalId
-                        m = pageText.match(/"externalId":"(UC[^"]+)"/);
-                      }
-                      if (m) {
-                        const channelId = m[1];
-                        localStorage.setItem(cacheKey, channelId);
-                        return channelId;
-                      }
+                    const candidateUrls = [
+                      `https://r.jina.ai/http://www.youtube.com${handlePath}`,
+                      `https://r.jina.ai/https://www.youtube.com${handlePath}`,
+                      `https://r.jina.ai/http://www.youtube.com${handlePath}/about`,
+                      `https://r.jina.ai/https://www.youtube.com${handlePath}/about`
+                    ];
+                    for (const url of candidateUrls) {
+                      try {
+                        const pageRes = await fetch(url);
+                        if (!pageRes.ok) continue;
+                        const pageText = await pageRes.text();
+                        const found = extractChannelIdFromText(pageText);
+                        if (found) {
+                          const channelId = found;
+                          localStorage.setItem(cacheKey, channelId);
+                          return channelId;
+                        }
+                      } catch (e) {}
                     }
                   }
                 } catch (err) {
@@ -869,28 +891,12 @@
               return;
             }
             expandContainer.style.display = "block";
-            expandStatus.textContent = "Loading...";
+            // Placeholder UI only; fetching disabled for now
+            expandStatus.textContent = "Channel videos placeholder (fetching disabled).";
             expandBtn.textContent = "▴";
             expandBtn.title = "Collapse";
-
-            let channelId = videoData.channelId || null;
-            if (!channelId) {
-              const details = await resolveChannelDetails(videoData.video_id);
-              channelId = details?.channelId || null;
-              if (!videoData.author_url && details?.author_url) {
-                authorP.href = details.author_url;
-              }
-            }
-            if (!channelId) {
-              expandStatus.textContent = "Could not resolve channel.";
-              return;
-            }
-            const items = await fetchChannelLatestVideos(channelId, 7);
-            if (!items || items.length === 0) {
-              expandStatus.textContent = "No videos found or fetch blocked.";
-              return;
-            }
-            renderChannelVideosList(items);
+            // Intentionally do not fetch latest videos; keep placeholder visible
+            return;
           }
 
           expandBtn.onclick = toggleExpand;
