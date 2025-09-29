@@ -98,9 +98,9 @@
           color: #6cf06c;
           border: 1px solid #333;
           border-radius: 8px;
-          font-size: 1rem;
+          font-size: 1.3rem;
           font-weight: bold;
-          padding: 8px 24px;
+          padding: 12px 28px;
           box-shadow: 0 2px 8px rgba(0,0,0,0.12);
           cursor: pointer;
           transition: background 0.2s, color 0.2s;
@@ -116,16 +116,16 @@
           color: #8ecae6;
           border: 1px solid #333;
           border-radius: 8px;
-          font-size: 1rem;
+          font-size: 1.3rem;
           font-weight: bold;
-          padding: 8px 24px;
+          padding: 12px 28px;
           box-shadow: 0 2px 8px rgba(0,0,0,0.12);
           cursor: pointer;
           transition: background 0.2s, color 0.2s;
         "
         onmouseover="this.style.background='#1a1a1a';this.style.color='#fff';"
         onmouseout="this.style.background='#232323';this.style.color='#8ecae6';"
-      >Switch to Fixed Width</button>
+      >Viewport</button>
     </div>
 
     <ul id="history_list"></ul>
@@ -460,6 +460,47 @@
         return null; // couldn't extract ID
       }
 
+      async function resolveChannelDetails(videoId) {
+        try {
+          const cacheKey = `channelDetails:${videoId}`;
+          const cached = localStorage.getItem(cacheKey);
+          if (cached) return JSON.parse(cached);
+          const res = await fetch(`https://noembed.com/embed?url=https://www.youtube.com/watch?v=${videoId}`);
+          if (res.ok) {
+            const data = await res.json();
+            let author_url = data.author_url || null;
+            let channelId = null;
+            if (author_url) {
+              let m = author_url.match(/\/channel\/([A-Za-z0-9_-]+)/);
+              if (m) channelId = m[1];
+              if (!channelId) {
+                try {
+                  const u = new URL(author_url);
+                  const handlePathMatch = (u.pathname || "").match(/\/@[^/]+/);
+                  if (handlePathMatch) {
+                    const proxyUrl = `https://r.jina.ai/http://www.youtube.com${handlePathMatch[0]}`;
+                    const pageRes = await fetch(proxyUrl);
+                    if (pageRes.ok) {
+                      const text = await pageRes.text();
+                      let m2 = text.match(/https:\/\/www\.youtube\.com\/channel\/(UC[\w-]+)/);
+                      if (!m2) m2 = text.match(/"channelId":"(UC[^"]+)"/);
+                      if (!m2) m2 = text.match(/"externalId":"(UC[^"]+)"/);
+                      if (m2) channelId = m2[1];
+                    }
+                  }
+                } catch (e) {}
+              }
+            }
+            const result = { channelId, author_url };
+            localStorage.setItem(cacheKey, JSON.stringify(result));
+            return result;
+          }
+        } catch (e) {
+          console.warn("resolveChannelDetails error", e);
+        }
+        return { channelId: null, author_url: null };
+      }
+
       function apply_vid(vid) {
         console.log("apply_vid", vid);
         if (vid) {
@@ -467,8 +508,13 @@
 
           startSeek(100);
 
-          setTimeout(() => {
+          setTimeout(async () => {
             const videoData = player.getVideoData();
+            try {
+              const details = await resolveChannelDetails(videoData.video_id);
+              if (details?.channelId) videoData.channelId = details.channelId;
+              if (details?.author_url) videoData.author_url = details.author_url;
+            } catch (e) {}
             addToHistory(videoData, document.title);
           }, 2000);
         }
@@ -602,6 +648,21 @@
           playButton.onmouseleave = () => playButton.style.background = "#2d6a4f";
           playButton.onclick = () => apply_input_vid(videoData.video_id);
 
+          // Expand/Collapse button
+          const expandBtn = document.createElement("button");
+          expandBtn.textContent = "▾";
+          expandBtn.title = "Expand channel videos";
+          expandBtn.style.background = "#3a3a3a";
+          expandBtn.style.color = "#fff";
+          expandBtn.style.border = "none";
+          expandBtn.style.borderRadius = "4px";
+          expandBtn.style.padding = "4px 10px";
+          expandBtn.style.cursor = "pointer";
+          expandBtn.style.fontSize = "1.1em";
+          expandBtn.style.marginLeft = "8px";
+          expandBtn.onmouseenter = () => expandBtn.style.background = "#4a4a4a";
+          expandBtn.onmouseleave = () => expandBtn.style.background = "#3a3a3a";
+
           // Assemble top row
           const leftGroup = document.createElement("span");
           leftGroup.style.display = "flex";
@@ -613,7 +674,10 @@
           }
 
           topRow.appendChild(leftGroup);
-          topRow.appendChild(playButton);
+          const rightGroup = document.createElement("span");
+          rightGroup.appendChild(playButton);
+          rightGroup.appendChild(expandBtn);
+          topRow.appendChild(rightGroup);
 
           // Title row
           const titleP = document.createElement("span");
@@ -625,10 +689,216 @@
           titleP.style.marginBottom = "2px";
           titleP.style.wordBreak = "break-word";
 
+          // Expandable container for latest videos
+          const expandContainer = document.createElement("div");
+          expandContainer.style.display = "none";
+          expandContainer.style.width = "100%";
+          expandContainer.style.marginTop = "6px";
+          expandContainer.style.padding = "8px 10px";
+          expandContainer.style.background = "#1c1c1c";
+          expandContainer.style.border = "1px solid #333";
+          expandContainer.style.borderRadius = "6px";
+          expandContainer.style.boxSizing = "border-box";
+
+          const expandStatus = document.createElement("div");
+          expandStatus.style.color = "#bbb";
+          expandStatus.style.fontSize = "0.9rem";
+          expandStatus.textContent = "Loading...";
+          expandContainer.appendChild(expandStatus);
+
+          function renderChannelVideosList(items) {
+            expandContainer.innerHTML = "";
+            const list = document.createElement("ul");
+            list.style.listStyle = "none";
+            list.style.padding = "0";
+            list.style.margin = "0";
+            items.forEach(({ title, videoId }) => {
+              const li = document.createElement("li");
+              li.style.display = "flex";
+              li.style.alignItems = "center";
+              li.style.justifyContent = "space-between";
+              li.style.gap = "8px";
+              li.style.padding = "6px 0";
+              li.style.borderBottom = "1px solid #2a2a2a";
+
+              const t = document.createElement("span");
+              t.textContent = title;
+              t.style.color = "#eaeaea";
+              t.style.fontSize = "0.95rem";
+              t.style.flex = "1";
+              t.style.wordBreak = "break-word";
+
+              const play = document.createElement("button");
+              play.textContent = "▶️";
+              play.title = "Play";
+              play.style.background = "#2d6a4f";
+              play.style.color = "#fff";
+              play.style.border = "none";
+              play.style.borderRadius = "4px";
+              play.style.padding = "4px 10px";
+              play.style.cursor = "pointer";
+              play.style.fontSize = "1.05em";
+              play.onmouseenter = () => play.style.background = "#40916c";
+              play.onmouseleave = () => play.style.background = "#2d6a4f";
+              play.onclick = () => apply_input_vid(videoId);
+
+              li.appendChild(t);
+              li.appendChild(play);
+              list.appendChild(li);
+            });
+            expandContainer.appendChild(list);
+          }
+
+          async function resolveChannelIdForVideo(videoId) {
+            try {
+              const cacheKey = `channelIdForVideo:${videoId}`;
+              const cached = localStorage.getItem(cacheKey);
+              if (cached) return cached;
+              const res = await fetch(`https://noembed.com/embed?url=https://www.youtube.com/watch?v=${videoId}`);
+              if (!res.ok) throw new Error("noembed failed");
+              const data = await res.json();
+              if (data && data.author_url) {
+                if (!videoData.author_url) {
+                  authorP.href = data.author_url;
+                }
+                // 1) Direct /channel/ID link
+                const channelMatch = data.author_url.match(/\/channel\/([A-Za-z0-9_-]+)/);
+                if (channelMatch) {
+                  const channelId = channelMatch[1];
+                  localStorage.setItem(cacheKey, channelId);
+                  return channelId;
+                }
+                // 2) Handle-based URL: /@handle — fetch page via proxy and parse channelId
+                try {
+                  const urlObj = new URL(data.author_url);
+                  const path = urlObj.pathname || ""; // e.g., "/@Liquicity"
+                  const handleMatch = path.match(/\/@[^/]+/);
+                  if (handleMatch) {
+                    const handlePath = handleMatch[0];
+                    const proxyUrl = `https://r.jina.ai/http://www.youtube.com${handlePath}`;
+                    const pageRes = await fetch(proxyUrl);
+                    if (pageRes.ok) {
+                      const pageText = await pageRes.text();
+                      // Try canonical channel link
+                      let m = pageText.match(/https:\/\/www\.youtube\.com\/channel\/(UC[\w-]+)/);
+                      if (!m) {
+                        // Try JSON blobs that contain channelId
+                        m = pageText.match(/"channelId":"(UC[^"]+)"/);
+                      }
+                      if (!m) {
+                        // Some pages expose externalId
+                        m = pageText.match(/"externalId":"(UC[^"]+)"/);
+                      }
+                      if (m) {
+                        const channelId = m[1];
+                        localStorage.setItem(cacheKey, channelId);
+                        return channelId;
+                      }
+                    }
+                  }
+                } catch (err) {
+                  console.warn("handle resolution failed", err);
+                }
+              }
+              return null;
+            } catch (e) {
+              console.warn("resolveChannelIdForVideo error", e);
+              return null;
+            }
+          }
+
+          async function fetchChannelLatestVideos(channelId, max = 7) {
+            const cacheKey = `channelFeed:${channelId}`;
+            const cacheTsKey = `channelFeedTs:${channelId}`;
+            try {
+              const now = Date.now();
+              const cached = localStorage.getItem(cacheKey);
+              const cachedTs = Number(localStorage.getItem(cacheTsKey) || 0);
+              if (cached && now - cachedTs < 30 * 60 * 1000) {
+                return JSON.parse(cached);
+              }
+              const url = `https://www.youtube.com/feeds/videos.xml?channel_id=${channelId}`;
+              try {
+                const res = await fetch(url);
+                if (!res.ok) throw new Error("feed fetch failed");
+                const text = await res.text();
+                const items = parseChannelFeed(text, max);
+                localStorage.setItem(cacheKey, JSON.stringify(items));
+                localStorage.setItem(cacheTsKey, String(now));
+                return items;
+              } catch (e) {
+                // CORS fallback via r.jina.ai proxy
+                const proxyUrl = `https://r.jina.ai/http://www.youtube.com/feeds/videos.xml?channel_id=${channelId}`;
+                const res2 = await fetch(proxyUrl);
+                if (!res2.ok) throw new Error("proxy feed fetch failed");
+                const text2 = await res2.text();
+                const items = parseChannelFeed(text2, max);
+                localStorage.setItem(cacheKey, JSON.stringify(items));
+                localStorage.setItem(cacheTsKey, String(now));
+                return items;
+              }
+            } catch (e) {
+              console.warn("fetchChannelLatestVideos error", e);
+              return [];
+            }
+          }
+
+          function parseChannelFeed(xmlText, max) {
+            const parser = new DOMParser();
+            const xml = parser.parseFromString(xmlText, "application/xml");
+            const entries = Array.from(xml.getElementsByTagName("entry"));
+            return entries.slice(0, max).map((entry) => {
+              const titleEl = entry.getElementsByTagName("title")[0];
+              const vidEl = entry.getElementsByTagName("yt:videoId")[0];
+              let videoId = vidEl ? vidEl.textContent : "";
+              if (!videoId) {
+                const idEl = entry.getElementsByTagName("id")[0];
+                const raw = idEl ? idEl.textContent : "";
+                videoId = raw.split(":").pop();
+              }
+              return { title: titleEl ? titleEl.textContent : "(untitled)", videoId };
+            });
+          }
+
+          async function toggleExpand() {
+            const isOpen = expandContainer.style.display !== "none";
+            if (isOpen) {
+              expandContainer.style.display = "none";
+              expandBtn.textContent = "▾";
+              expandBtn.title = "Expand channel videos";
+              return;
+            }
+            expandContainer.style.display = "block";
+            expandStatus.textContent = "Loading...";
+            expandBtn.textContent = "▴";
+            expandBtn.title = "Collapse";
+
+            let channelId = videoData.channelId || null;
+            if (!channelId) {
+              const details = await resolveChannelDetails(videoData.video_id);
+              channelId = details?.channelId || null;
+              if (!videoData.author_url && details?.author_url) {
+                authorP.href = details.author_url;
+              }
+            }
+            if (!channelId) {
+              expandStatus.textContent = "Could not resolve channel.";
+              return;
+            }
+            const items = await fetchChannelLatestVideos(channelId, 7);
+            if (!items || items.length === 0) {
+              expandStatus.textContent = "No videos found or fetch blocked.";
+              return;
+            }
+            renderChannelVideosList(items);
+          }
+
+          expandBtn.onclick = toggleExpand;
 
           // Assemble
           listItem.appendChild(topRow);
           listItem.appendChild(titleP);
+          listItem.appendChild(expandContainer);
 
           history_list.appendChild(listItem);
         }
@@ -662,7 +932,7 @@
           timelineTime.style.position = "";
           timelineTime.style.left = "";
           timelineTime.style.width = "";
-          switchWidthBtn.textContent = "Switch to Viewport Width";
+          switchWidthBtn.textContent = "Viewport";
         } else {
           // Use viewport dimensions and position, accounting for zoom and scroll
           const viewportWidth = window.visualViewport.width;
@@ -685,7 +955,7 @@
           timelineTime.style.left = viewportLeft + "px";
           timelineTime.style.width = viewportWidth + "px";
 
-          switchWidthBtn.textContent = "Switch to Full Width";
+          switchWidthBtn.textContent = "Full";
         }
         isFullWidth = full;
       }
