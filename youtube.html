@@ -152,6 +152,10 @@
       onmouseover="this.style.background='#3a2323';this.style.color='#fff';"
       onmouseout="this.style.background='#232323';this.style.color='#ff6b6b';"
     />
+    <div id="msal-login-container" style="position: fixed; bottom: 16px; right: 16px; display: flex; flex-direction: column; align-items: flex-end; gap: 6px; z-index: 9999;">
+      <button id="msal-login-btn" style="background: #232323; color: #8ecae6; border: 1px solid #333; border-radius: 8px; font-size: 0.95rem; font-weight: 600; padding: 8px 14px; box-shadow: 0 2px 8px rgba(0,0,0,0.12); cursor: pointer; transition: background 0.2s, color 0.2s;">Microsoft Sign in</button>
+      <span id="msal-login-status" style="color: #bbb; font-size: 0.85rem;">Signed out</span>
+    </div>
     <script>
       var tag = document.createElement("script");
       tag.src = "https://www.youtube.com/player_api";
@@ -982,6 +986,107 @@
       // Set initial state
       setFullWidth(true);
 
+    </script>
+    <script src="https://alcdn.msauth.net/browser/2.38.0/js/msal-browser.min.js"></script>
+    <script>
+      // Microsoft identity platform (MSAL) bootstrap for SPA
+      // Using F# app registration clientId and consumers tenant (no secret)
+      const msalConfig = {
+        auth: {
+          clientId: '57f0a441-626f-433e-b375-0c81f1203567',
+          authority: 'https://login.microsoftonline.com/consumers',
+          redirectUri: 'https://rutgersc.github.io/youtube.html'
+        },
+        cache: { cacheLocation: 'localStorage', storeAuthStateInCookie: false }
+      };
+      const msalScopes = ['openid', 'profile', 'offline_access', 'User.Read', 'Tasks.ReadWrite'];
+      const msalInstance = new msal.PublicClientApplication(msalConfig);
+
+      function updateMsalUi() {
+        const btn = document.getElementById('msal-login-btn');
+        const status = document.getElementById('msal-login-status');
+        if (!btn || !status) return;
+        const account = msalInstance.getActiveAccount();
+        if (account) {
+          btn.textContent = 'Sign out';
+          btn.style.color = '#ff6b6b';
+          status.textContent = 'Signed in';
+        } else {
+          btn.textContent = 'Sign in';
+          btn.style.color = '#8ecae6';
+          status.textContent = 'Signed out';
+        }
+      }
+
+      async function msalLogin() {
+        try {
+          const res = await msalInstance.loginPopup({ scopes: msalScopes });
+          msalInstance.setActiveAccount(res.account);
+          updateMsalUi();
+        } catch (e) {
+          console.warn('loginPopup failed', e);
+        }
+      }
+
+      async function msalLogout() {
+        try {
+          const account = msalInstance.getActiveAccount();
+          await msalInstance.logoutPopup({ account });
+          updateMsalUi();
+        } catch (e) {
+          console.warn('logoutPopup failed', e);
+        }
+      }
+
+      async function msalAcquireGraphToken() {
+        const account = msalInstance.getActiveAccount();
+        try {
+          if (!account) throw new Error('No signed-in account');
+          const res = await msalInstance.acquireTokenSilent({ scopes: msalScopes, account });
+          return res.accessToken;
+        } catch (e) {
+          const res = await msalInstance.acquireTokenPopup({ scopes: msalScopes });
+          msalInstance.setActiveAccount(res.account);
+          updateMsalUi();
+          return res.accessToken;
+        }
+      }
+
+      // Expose helper for other scripts to call Graph easily
+      window.msalAcquireGraphToken = msalAcquireGraphToken;
+
+      // Handle redirect responses if any, then set initial UI state
+      msalInstance.handleRedirectPromise()
+        .then((response) => {
+          if (response && response.account) {
+            msalInstance.setActiveAccount(response.account);
+          } else {
+            const accounts = msalInstance.getAllAccounts();
+            if (accounts && accounts.length > 0) {
+              msalInstance.setActiveAccount(accounts[0]);
+            }
+          }
+        })
+        .catch((err) => console.warn('handleRedirectPromise error', err))
+        .finally(() => {
+          updateMsalUi();
+        });
+
+      // Wire up the floating button
+      document.addEventListener('DOMContentLoaded', function() {
+        const btn = document.getElementById('msal-login-btn');
+        if (btn) {
+          btn.onclick = function() {
+            const account = msalInstance.getActiveAccount();
+            if (account) {
+              msalLogout();
+            } else {
+              msalLogin();
+            }
+          };
+        }
+        updateMsalUi();
+      });
     </script>
   </body>
 </html>
