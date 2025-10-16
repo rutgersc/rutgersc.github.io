@@ -449,6 +449,12 @@
             url.hostname === 'www.youtube.com' ||
             url.hostname === 'm.youtube.com'
           ) {
+            // Handle /live/ URLs (e.g., /live/DmiExfHEJZM)
+            const liveMatch = url.pathname.match(/^\/live\/([\w-]{11})/);
+            if (liveMatch) {
+              return liveMatch[1];
+            }
+
             return url.searchParams.get('v');
           }
 
