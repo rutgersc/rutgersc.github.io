@@ -15,8 +15,10 @@
 
       .input-container {
         display: flex;
-        flex-direction: column;
+        flex-direction: row;
         align-items: center;
+        justify-content: center;
+        gap: 8px;
       }
 
       input[type="text"] {
@@ -25,7 +27,6 @@
         font-size: 18px;
         padding: 10px;
         display: block;
-        margin-bottom: 8px;
 
         background-color: #2d2d2d;
         color: #ffffff;
@@ -70,7 +71,51 @@
         type="text"
         placeholder="Video ID or URL"
         onclick="select_input_vid()"
+        onkeypress="if(event.key === 'Enter') apply_input_vid_from_button()"
       />
+      <button
+        id="apply-vid-btn"
+        onclick="apply_input_vid_from_button()"
+        style="
+          height: 50px;
+          padding: 0 20px;
+          font-size: 14px;
+          background-color: #2d6a4f;
+          color: #ffffff;
+          border: none;
+          cursor: pointer;
+          border-radius: 4px;
+          font-weight: bold;
+          transition: background 0.2s;
+        "
+        onmouseover="this.style.background='#40916c';"
+        onmouseout="this.style.background='#2d6a4f';"
+      >Go</button>
+    </div>
+
+    <div id="parsed-url-container" style="display: none; margin: 15px 0;">
+      <div style="display: flex; justify-content: center;">
+        <input
+          id="parsed-url"
+          type="text"
+          readonly
+          style="
+            width: 60%;
+            max-width: 600px;
+            padding: 8px 12px;
+            background-color: #1a1a1a;
+            color: #6cf06c;
+            border: 1px solid #333;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 0.9rem;
+            text-align: center;
+            cursor: pointer;
+          "
+          onclick="this.select(); document.execCommand('copy');"
+          title="Click to copy"
+        />
+      </div>
     </div>
 
     <div id="ytplayer"></div>
@@ -435,6 +480,13 @@
         }
       }
 
+      function apply_input_vid_from_button() {
+        const str = input_vid.value;
+        if (str) {
+          apply_input_vid(str);
+        }
+      }
+
       function extractYouTubeId(input) {
         try {
           // If it's already a plain video ID
@@ -537,6 +589,13 @@
       function apply_vid(vid) {
         console.log("apply_vid", vid);
         if (vid) {
+          // Show parsed URL
+          const parsedUrlContainer = document.getElementById("parsed-url-container");
+          const parsedUrlInput = document.getElementById("parsed-url");
+          const fullUrl = `https://www.youtube.com/watch?v=${vid}`;
+          parsedUrlInput.value = fullUrl;
+          parsedUrlContainer.style.display = "block";
+
           player.loadVideoById(vid);
 
           startSeek(100);
