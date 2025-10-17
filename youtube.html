@@ -627,11 +627,12 @@
         renderHistory();
       }
 
-      function renderHistory() {
-        history_list.innerHTML = "";
-        const history = getHistory();
-        console.log("renderHistory", history);
-        const renderItem = (videoData, timestamp) => {
+      function renderVideoItem(videoData, timestamp, options = {}) {
+        const {
+          onRemove = null,
+          removeButtonText = '🗑️',
+          removeButtonTitle = 'Remove'
+        } = options;
           const listItem = document.createElement("li");
           listItem.style.background = "#232323";
           listItem.style.borderRadius = "8px";
@@ -733,6 +734,25 @@
           playButton.onmouseleave = () => playButton.style.background = "#2d6a4f";
           playButton.onclick = () => apply_input_vid(videoData.video_id);
 
+          // Remove button (if onRemove callback provided)
+          let removeButton = null;
+          if (onRemove) {
+            removeButton = document.createElement("button");
+            removeButton.textContent = removeButtonText;
+            removeButton.title = removeButtonTitle;
+            removeButton.style.background = "#8b0000";
+            removeButton.style.color = "#fff";
+            removeButton.style.border = "none";
+            removeButton.style.borderRadius = "4px";
+            removeButton.style.padding = "4px 10px";
+            removeButton.style.cursor = "pointer";
+            removeButton.style.fontSize = "1.1em";
+            removeButton.style.marginLeft = "8px";
+            removeButton.onmouseenter = () => removeButton.style.background = "#a00000";
+            removeButton.onmouseleave = () => removeButton.style.background = "#8b0000";
+            removeButton.onclick = () => onRemove(videoData.video_id);
+          }
+
           // Expand/Collapse button
           const expandBtn = document.createElement("button");
           expandBtn.textContent = "▾";
@@ -761,6 +781,7 @@
           topRow.appendChild(leftGroup);
           const rightGroup = document.createElement("span");
           rightGroup.appendChild(playButton);
+          if (removeButton) rightGroup.appendChild(removeButton);
           rightGroup.appendChild(expandBtn);
           topRow.appendChild(rightGroup);
 
@@ -815,10 +836,26 @@
           listItem.appendChild(titleP);
           listItem.appendChild(expandContainer);
 
-          history_list.appendChild(listItem);
-        }
+          return listItem;
+      }
 
-        history.forEach(({ videoData, timestamp }) => { renderItem(videoData, timestamp); });
+      function renderHistory() {
+        history_list.innerHTML = "";
+        const history = getHistory();
+        console.log("renderHistory", history);
+
+        history.forEach(({ videoData, timestamp }) => {
+          const listItem = renderVideoItem(videoData, timestamp, {
+            onRemove: (videoId) => {
+              // Remove from history
+              const history = getHistory();
+              const filtered = history.filter(item => item.videoData.video_id !== videoId);
+              localStorage.setItem("history", JSON.stringify(filtered));
+              renderHistory();
+            }
+          });
+          history_list.appendChild(listItem);
+        });
       }
 
       function clearHistory() {
@@ -1242,80 +1279,22 @@
           // Render items (fetch metadata in parallel)
           for (const item of items) {
             const videoId = extractYouTubeId(item.displayName) || item.displayName;
-            const listItem = document.createElement('li');
-            listItem.style.background = '#232323';
-            listItem.style.borderRadius = '8px';
-            listItem.style.margin = '12px auto';
-            listItem.style.padding = '10px 16px';
-            listItem.style.maxWidth = '480px';
-            listItem.style.boxShadow = '0 2px 8px rgba(0,0,0,0.12)';
-            listItem.style.display = 'flex';
-            listItem.style.flexDirection = 'column';
-            listItem.style.gap = '8px';
-            listItem.style.border = '1px solid #333';
 
-            // Top row: video ID and buttons
-            const topRow = document.createElement('div');
-            topRow.style.display = 'flex';
-            topRow.style.alignItems = 'center';
-            topRow.style.justifyContent = 'space-between';
-            topRow.style.gap = '8px';
+            // Create a videoData-like object for rendering
+            const videoData = {
+              video_id: videoId,
+              title: 'Loading...',
+              author: 'Loading...',
+              author_url: null
+            };
 
-            const videoIdSpan = document.createElement('span');
-            videoIdSpan.textContent = videoId;
-            videoIdSpan.style.color = '#ffd166';
-            videoIdSpan.style.fontFamily = 'monospace';
-            videoIdSpan.style.fontSize = '0.85rem';
-
-            const buttonContainer = document.createElement('div');
-            buttonContainer.style.display = 'flex';
-            buttonContainer.style.gap = '8px';
-
-            const playButton = document.createElement('button');
-            playButton.textContent = '▶️';
-            playButton.title = 'Play';
-            playButton.style.background = '#2d6a4f';
-            playButton.style.color = '#fff';
-            playButton.style.border = 'none';
-            playButton.style.borderRadius = '4px';
-            playButton.style.padding = '4px 10px';
-            playButton.style.cursor = 'pointer';
-            playButton.style.fontSize = '1.1em';
-            playButton.onmouseenter = () => playButton.style.background = '#40916c';
-            playButton.onmouseleave = () => playButton.style.background = '#2d6a4f';
-            playButton.onclick = () => apply_input_vid(videoId);
-
-            const removeButton = document.createElement('button');
-            removeButton.textContent = '🗑️';
-            removeButton.title = 'Remove';
-            removeButton.style.background = '#8b0000';
-            removeButton.style.color = '#fff';
-            removeButton.style.border = 'none';
-            removeButton.style.borderRadius = '4px';
-            removeButton.style.padding = '4px 10px';
-            removeButton.style.cursor = 'pointer';
-            removeButton.style.fontSize = '1.1em';
-            removeButton.onmouseenter = () => removeButton.style.background = '#a00000';
-            removeButton.onmouseleave = () => removeButton.style.background = '#8b0000';
-            removeButton.onclick = () => removeFromWatchLater(item.id);
-
-            buttonContainer.appendChild(playButton);
-            buttonContainer.appendChild(removeButton);
-            topRow.appendChild(videoIdSpan);
-            topRow.appendChild(buttonContainer);
-            listItem.appendChild(topRow);
-
-            // Title row (will be populated after fetch)
-            const titleSpan = document.createElement('span');
-            titleSpan.textContent = 'Loading title...';
-            titleSpan.style.fontSize = '0.95rem';
-            titleSpan.style.color = '#bbb';
-            titleSpan.style.fontStyle = 'italic';
-            listItem.appendChild(titleSpan);
+            const listItem = renderVideoItem(videoData, null, {
+              onRemove: (vid) => removeFromWatchLater(item.id)
+            });
 
             watchLaterList.appendChild(listItem);
 
-            // Fetch metadata asynchronously
+            // Fetch metadata asynchronously and update the existing item
             (async () => {
               try {
                 const cacheKey = `videoMetadata:${videoId}`;
@@ -1325,22 +1304,32 @@
                   const res = await fetch(`https://noembed.com/embed?url=https://www.youtube.com/watch?v=${videoId}`);
                   if (res.ok) {
                     const data = await res.json();
-                    metadata = JSON.stringify({ title: data.title, author: data.author_name });
+                    metadata = JSON.stringify({
+                      title: data.title,
+                      author: data.author_name,
+                      author_url: data.author_url
+                    });
                     localStorage.setItem(cacheKey, metadata);
                   }
                 }
 
                 if (metadata) {
                   const data = JSON.parse(metadata);
-                  titleSpan.textContent = data.title || 'Unknown title';
-                  titleSpan.style.color = '#fff';
-                  titleSpan.style.fontStyle = 'normal';
-                  titleSpan.style.fontWeight = '500';
+                  // Update the displayed title and author
+                  const titleEl = listItem.querySelector('span[style*="font-weight: 500"]');
+                  const authorEl = listItem.querySelector('a[style*="font-weight: bold"]');
+                  if (titleEl) {
+                    titleEl.textContent = data.title || 'Unknown title';
+                  }
+                  if (authorEl) {
+                    authorEl.textContent = data.author || 'Unknown author';
+                    if (data.author_url) {
+                      authorEl.href = data.author_url;
+                    }
+                  }
                 }
               } catch (e) {
                 console.warn('Failed to fetch metadata for', videoId, e);
-                titleSpan.textContent = videoId;
-                titleSpan.style.fontStyle = 'normal';
               }
             })();
           }
