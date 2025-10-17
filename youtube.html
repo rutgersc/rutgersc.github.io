@@ -1143,6 +1143,11 @@
             userEmail.textContent = account.username || '';
             userInfo.style.display = 'block';
           }
+
+          // Initialize watch later when signed in
+          if (!watchLaterTaskId) {
+            initWatchLater().catch(e => console.error('Failed to init watch later:', e));
+          }
         } else {
           btn.textContent = 'Sign in';
           btn.style.color = '#8ecae6';
@@ -1291,11 +1296,214 @@
         }
       }
 
+      // Watch Later functionality using Microsoft To Do checklist items
+      let watchLaterTaskId = null;
+      let watchLaterListId = null;
+      let initWatchLaterPromise = null;
+
+      async function initWatchLater() {
+        // Prevent multiple simultaneous initializations
+        if (initWatchLaterPromise) {
+          return initWatchLaterPromise;
+        }
+
+        initWatchLaterPromise = (async () => {
+          try {
+            const list = await getAppStateTodoList();
+            watchLaterListId = list.id;
+
+            const tasks = await getAppStateTasks(list.id);
+            let watchLaterTask = tasks.find(t => t.title === 'youtube-watch');
+
+            if (!watchLaterTask) {
+              console.log('Creating youtube-watch task...');
+              watchLaterTask = await createAppStateTask(list.id, 'youtube-watch', 'Videos to watch later');
+            }
+
+            watchLaterTaskId = watchLaterTask.id;
+            console.log('Watch later task initialized:', watchLaterTask);
+            console.log('Task ID:', watchLaterTask.id);
+            console.log('Task title:', watchLaterTask.title);
+
+            // Fetch full task details to see if there are steps
+            const fullTask = await callGraphApi(`/me/todo/lists/${watchLaterListId}/tasks/${watchLaterTaskId}`);
+            console.log('Full task details:', fullTask);
+
+            await loadWatchLater();
+          } catch (e) {
+            console.error('initWatchLater error:', e);
+            document.getElementById('watch-later-status').textContent = 'Error loading watch later list';
+            initWatchLaterPromise = null; // Allow retry on error
+            throw e;
+          }
+        })();
+
+        return initWatchLaterPromise;
+      }
+
+      async function getWatchLaterChecklistItems() {
+        try {
+          console.log('Fetching checklist items from API...');
+          console.log('URL:', `/me/todo/lists/${watchLaterListId}/tasks/${watchLaterTaskId}/checklistItems`);
+          const response = await callGraphApi(`/me/todo/lists/${watchLaterListId}/tasks/${watchLaterTaskId}/checklistItems`);
+          console.log('Raw API response:', response);
+          console.log('Response.value:', response.value);
+          return response.value || [];
+        } catch (e) {
+          console.error('getWatchLaterChecklistItems error:', e);
+          return [];
+        }
+      }
+
+      async function addToWatchLater(videoIdOrUrl) {
+        try {
+          const videoId = extractYouTubeId(videoIdOrUrl);
+          if (!videoId) {
+            console.error('Invalid video ID or URL');
+            return;
+          }
+
+          if (!watchLaterTaskId) {
+            await initWatchLater();
+          }
+
+          const checklistItem = await callGraphApi(
+            `/me/todo/lists/${watchLaterListId}/tasks/${watchLaterTaskId}/checklistItems`,
+            'POST',
+            { displayName: videoId }
+          );
+
+          console.log('Added to watch later:', checklistItem);
+          await loadWatchLater();
+        } catch (e) {
+          console.error('addToWatchLater error:', e);
+        }
+      }
+
+      async function removeFromWatchLater(checklistItemId) {
+        try {
+          await callGraphApi(
+            `/me/todo/lists/${watchLaterListId}/tasks/${watchLaterTaskId}/checklistItems/${checklistItemId}`,
+            'DELETE'
+          );
+          console.log('Removed from watch later:', checklistItemId);
+          await loadWatchLater();
+        } catch (e) {
+          console.error('removeFromWatchLater error:', e);
+        }
+      }
+
+      async function loadWatchLater() {
+        const watchLaterList = document.getElementById('watch_later_list');
+        const watchLaterStatus = document.getElementById('watch-later-status');
+
+        console.log('=== Load Watch Later Debug ===');
+        console.log('watchLaterListId:', watchLaterListId);
+        console.log('watchLaterTaskId:', watchLaterTaskId);
+        console.log('initWatchLaterPromise:', initWatchLaterPromise);
+
+        try {
+          if (!watchLaterTaskId) {
+            console.log('No watchLaterTaskId, initializing...');
+            await initWatchLater();
+            return;
+          }
+
+          watchLaterStatus.textContent = 'Loading...';
+          const items = await getWatchLaterChecklistItems();
+
+          console.log('Loaded checklist items:', items);
+          console.log('Number of items:', items.length);
+
+          watchLaterList.innerHTML = '';
+          watchLaterStatus.style.display = 'none';
+
+          if (items.length === 0) {
+            console.log('No items to display');
+            watchLaterStatus.textContent = 'No videos in watch later';
+            watchLaterStatus.style.display = 'block';
+            return;
+          }
+
+          items.forEach(item => {
+            const videoId = item.displayName;
+            const listItem = document.createElement('li');
+            listItem.style.background = '#232323';
+            listItem.style.borderRadius = '8px';
+            listItem.style.margin = '12px auto';
+            listItem.style.padding = '10px 16px';
+            listItem.style.maxWidth = '480px';
+            listItem.style.boxShadow = '0 2px 8px rgba(0,0,0,0.12)';
+            listItem.style.display = 'flex';
+            listItem.style.alignItems = 'center';
+            listItem.style.justifyContent = 'space-between';
+            listItem.style.gap = '8px';
+            listItem.style.border = '1px solid #333';
+
+            const videoIdSpan = document.createElement('span');
+            videoIdSpan.textContent = videoId;
+            videoIdSpan.style.color = '#ffd166';
+            videoIdSpan.style.fontFamily = 'monospace';
+            videoIdSpan.style.fontSize = '0.9rem';
+
+            const buttonContainer = document.createElement('div');
+            buttonContainer.style.display = 'flex';
+            buttonContainer.style.gap = '8px';
+
+            const playButton = document.createElement('button');
+            playButton.textContent = '▶️';
+            playButton.title = 'Play';
+            playButton.style.background = '#2d6a4f';
+            playButton.style.color = '#fff';
+            playButton.style.border = 'none';
+            playButton.style.borderRadius = '4px';
+            playButton.style.padding = '4px 10px';
+            playButton.style.cursor = 'pointer';
+            playButton.style.fontSize = '1.1em';
+            playButton.onmouseenter = () => playButton.style.background = '#40916c';
+            playButton.onmouseleave = () => playButton.style.background = '#2d6a4f';
+            playButton.onclick = () => apply_input_vid(videoId);
+
+            const removeButton = document.createElement('button');
+            removeButton.textContent = '🗑️';
+            removeButton.title = 'Remove';
+            removeButton.style.background = '#8b0000';
+            removeButton.style.color = '#fff';
+            removeButton.style.border = 'none';
+            removeButton.style.borderRadius = '4px';
+            removeButton.style.padding = '4px 10px';
+            removeButton.style.cursor = 'pointer';
+            removeButton.style.fontSize = '1.1em';
+            removeButton.onmouseenter = () => removeButton.style.background = '#a00000';
+            removeButton.onmouseleave = () => removeButton.style.background = '#8b0000';
+            removeButton.onclick = () => removeFromWatchLater(item.id);
+
+            buttonContainer.appendChild(playButton);
+            buttonContainer.appendChild(removeButton);
+            listItem.appendChild(videoIdSpan);
+            listItem.appendChild(buttonContainer);
+            watchLaterList.appendChild(listItem);
+          });
+
+          console.log('Successfully rendered', items.length, 'items');
+          console.log('==============================');
+
+        } catch (e) {
+          console.error('loadWatchLater error:', e);
+          console.log('==============================');
+          watchLaterStatus.textContent = 'Error loading watch later';
+          watchLaterStatus.style.display = 'block';
+        }
+      }
+
       // Expose functions globally for testing
       window.getAppStateTodoList = getAppStateTodoList;
       window.getAppStateTasks = getAppStateTasks;
       window.createAppStateTask = createAppStateTask;
       window.updateAppStateTask = updateAppStateTask;
+      window.addToWatchLater = addToWatchLater;
+      window.loadWatchLater = loadWatchLater;
+      window.initWatchLater = initWatchLater;
 
       // Handle redirect responses if any, then set initial UI state
       msalInstance.handleRedirectPromise()
