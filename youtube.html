@@ -631,7 +631,8 @@
         const {
           onRemove = null,
           removeButtonText = '🗑️',
-          removeButtonTitle = 'Remove'
+          removeButtonTitle = 'Remove',
+          onPlay = null
         } = options;
           const listItem = document.createElement("li");
           listItem.style.background = "#232323";
@@ -732,7 +733,12 @@
           playButton.style.marginLeft = "8px";
           playButton.onmouseenter = () => playButton.style.background = "#40916c";
           playButton.onmouseleave = () => playButton.style.background = "#2d6a4f";
-          playButton.onclick = () => apply_input_vid(videoData.video_id);
+          playButton.onclick = () => {
+            if (onPlay) {
+              onPlay(videoData.video_id);
+            }
+            apply_input_vid(videoData.video_id);
+          };
 
           // Remove button (if onRemove callback provided)
           let removeButton = null;
@@ -1193,16 +1199,32 @@
         }
       }
 
-      async function removeFromWatchLater(checklistItemId) {
+      async function removeFromWatchLater(checklistItemId, listItemElement) {
+        // Immediately remove from UI (optimistic update)
+        if (listItemElement && listItemElement.parentNode) {
+          listItemElement.parentNode.removeChild(listItemElement);
+        }
+
+        // Check if list is now empty and show status message
+        const watchLaterList = document.getElementById('watch_later_list');
+        const watchLaterStatus = document.getElementById('watch-later-status');
+        if (watchLaterList && watchLaterList.children.length === 0) {
+          if (watchLaterStatus) {
+            watchLaterStatus.textContent = 'No videos in watch later';
+            watchLaterStatus.style.display = 'block';
+          }
+        }
+
+        // Then make the API call
         try {
           await callGraphApi(
             `/me/todo/lists/${watchLaterListId}/tasks/${watchLaterTaskId}/checklistItems/${checklistItemId}`,
             'DELETE'
           );
           console.log('Removed from watch later:', checklistItemId);
-          await loadWatchLater();
         } catch (e) {
           console.error('removeFromWatchLater error:', e);
+          // TODO: Could re-add the item to the list if the API call fails
         }
       }
 
@@ -1238,36 +1260,54 @@
             return;
           }
 
-          // Render items with embedded metadata
-          for (const item of items) {
-
-            let videoData;
+          // Step 1: Map items to videoData objects
+          const videoDataList = items.map(item => {
             try {
               // Try to parse as JSON (new format with embedded metadata)
-              videoData = JSON.parse(item.displayName);
+              const videoData = JSON.parse(item.displayName);
               if (!videoData.video_id) {
                 throw new Error('No video_id in parsed data');
               }
+              return { videoData, checklistItemId: item.id };
             } catch (e) {
               // Fallback: treat displayName as plain video ID (old format)
               const videoId = extractYouTubeId(item.displayName) || item.displayName;
-              videoData = {
-                video_id: videoId,
-                title: 'Loading...',
-                author: 'Loading...',
-                author_url: null
+              return {
+                videoData: {
+                  video_id: videoId,
+                  title: 'Loading...',
+                  author: 'Loading...',
+                  author_url: null
+                },
+                checklistItemId: item.id
               };
             }
+          });
 
-            const listItem = renderVideoItem(videoData, null, {
-              onRemove: (vid) => removeFromWatchLater(item.id)
+          // Step 2: Map videoData to list items
+          const listItems = videoDataList.map(({ videoData, checklistItemId }) => {
+            const element = renderVideoItem(videoData, null, {
+              onRemove: (vid) => removeFromWatchLater(checklistItemId, element),
+              onPlay: (vid) => removeFromWatchLater(checklistItemId, element)
             });
-            watchLaterList.appendChild(listItem);
+            return { element, videoData };
+          });
 
-            // If missing metadata, fetch it asynchronously to update the already-rendered item
-            if (!videoData.title || videoData.title === 'Loading...') {
-              const videoId = videoData.video_id;
-              (async () => {
+          // Step 3: Append all list items
+          listItems.forEach(({ element }) => {
+            watchLaterList.appendChild(element);
+          });
+
+          // Step 4: Filter items with missing metadata and fetch in parallel
+          const itemsNeedingMetadata = listItems.filter(({ videoData }) =>
+            !videoData.title || videoData.title === 'Loading...'
+          );
+
+          if (itemsNeedingMetadata.length > 0) {
+            // Fetch all missing metadata in parallel
+            Promise.all(
+              itemsNeedingMetadata.map(async ({ element, videoData }) => {
+                const videoId = videoData.video_id;
                 try {
                   const cacheKey = `videoMetadata:${videoId}`;
                   let metadata = localStorage.getItem(cacheKey);
@@ -1287,8 +1327,8 @@
 
                   if (metadata) {
                     const data = JSON.parse(metadata);
-                    const titleEl = listItem.querySelector('span[style*="font-weight: 500"]');
-                    const authorEl = listItem.querySelector('a[style*="font-weight: bold"]');
+                    const titleEl = element.querySelector('span[style*="font-weight: 500"]');
+                    const authorEl = element.querySelector('a[style*="font-weight: bold"]');
                     if (titleEl) titleEl.textContent = data.title || 'Unknown title';
                     if (authorEl) {
                       authorEl.textContent = data.author || 'Unknown author';
@@ -1298,8 +1338,8 @@
                 } catch (e) {
                   console.warn('Failed to fetch metadata for', videoId, e);
                 }
-              })();
-            }
+              })
+            ).catch(e => console.error('Error fetching metadata batch:', e));
           }
 
           console.log('Successfully rendered', items.length, 'items');
