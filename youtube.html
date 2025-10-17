@@ -1004,23 +1004,41 @@
         }
       }
 
+      function isMobile() {
+        return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      }
+
       async function msalLogin() {
         try {
-          const res = await msalInstance.loginPopup({ scopes: msalScopes });
-          msalInstance.setActiveAccount(res.account);
-          updateMsalUi();
+          if (isMobile()) {
+            // Use redirect flow on mobile
+            await msalInstance.loginRedirect({ scopes: msalScopes });
+            // Note: control won't return here - page will redirect
+          } else {
+            // Use popup flow on desktop
+            const res = await msalInstance.loginPopup({ scopes: msalScopes });
+            msalInstance.setActiveAccount(res.account);
+            updateMsalUi();
+          }
         } catch (e) {
-          console.warn('loginPopup failed', e);
+          console.warn('msalLogin failed', e);
         }
       }
 
       async function msalLogout() {
         try {
           const account = msalInstance.getActiveAccount();
-          await msalInstance.logoutPopup({ account });
-          updateMsalUi();
+          if (isMobile()) {
+            // Use redirect flow on mobile
+            await msalInstance.logoutRedirect({ account });
+            // Note: control won't return here - page will redirect
+          } else {
+            // Use popup flow on desktop
+            await msalInstance.logoutPopup({ account });
+            updateMsalUi();
+          }
         } catch (e) {
-          console.warn('logoutPopup failed', e);
+          console.warn('msalLogout failed', e);
         }
       }
 
