@@ -1193,44 +1193,6 @@
         }
       }
 
-      async function addToWatchLater(videoIdOrUrl) {
-        try {
-          console.log('=== Add to Watch Later ===');
-          console.log('Input:', videoIdOrUrl);
-
-          const videoId = extractYouTubeId(videoIdOrUrl);
-          console.log('Extracted video ID:', videoId);
-
-          if (!videoId) {
-            console.error('Invalid video ID or URL');
-            return;
-          }
-
-          if (!watchLaterTaskId) {
-            console.log('No task ID, initializing...');
-            await initWatchLater();
-          }
-
-          console.log('Adding to list:', watchLaterListId);
-          console.log('Adding to task:', watchLaterTaskId);
-          console.log('Video ID to add:', videoId);
-
-          const checklistItem = await callGraphApi(
-            `/me/todo/lists/${watchLaterListId}/tasks/${watchLaterTaskId}/checklistItems`,
-            'POST',
-            { displayName: videoId }
-          );
-
-          console.log('Successfully added checklist item:', checklistItem);
-          console.log('==============================');
-          await loadWatchLater();
-        } catch (e) {
-          console.error('addToWatchLater error:', e);
-          console.log('Error details:', e.message);
-          console.log('==============================');
-        }
-      }
-
       async function removeFromWatchLater(checklistItemId) {
         try {
           await callGraphApi(
@@ -1276,62 +1238,68 @@
             return;
           }
 
-          // Render items (fetch metadata in parallel)
+          // Render items with embedded metadata
           for (const item of items) {
-            const videoId = extractYouTubeId(item.displayName) || item.displayName;
 
-            // Create a videoData-like object for rendering
-            const videoData = {
-              video_id: videoId,
-              title: 'Loading...',
-              author: 'Loading...',
-              author_url: null
-            };
+            let videoData;
+            try {
+              // Try to parse as JSON (new format with embedded metadata)
+              videoData = JSON.parse(item.displayName);
+              if (!videoData.video_id) {
+                throw new Error('No video_id in parsed data');
+              }
+            } catch (e) {
+              // Fallback: treat displayName as plain video ID (old format)
+              const videoId = extractYouTubeId(item.displayName) || item.displayName;
+              videoData = {
+                video_id: videoId,
+                title: 'Loading...',
+                author: 'Loading...',
+                author_url: null
+              };
+            }
 
             const listItem = renderVideoItem(videoData, null, {
               onRemove: (vid) => removeFromWatchLater(item.id)
             });
-
             watchLaterList.appendChild(listItem);
 
-            // Fetch metadata asynchronously and update the existing item
-            (async () => {
-              try {
-                const cacheKey = `videoMetadata:${videoId}`;
-                let metadata = localStorage.getItem(cacheKey);
+            // If missing metadata, fetch it asynchronously to update the already-rendered item
+            if (!videoData.title || videoData.title === 'Loading...') {
+              const videoId = videoData.video_id;
+              (async () => {
+                try {
+                  const cacheKey = `videoMetadata:${videoId}`;
+                  let metadata = localStorage.getItem(cacheKey);
 
-                if (!metadata) {
-                  const res = await fetch(`https://noembed.com/embed?url=https://www.youtube.com/watch?v=${videoId}`);
-                  if (res.ok) {
-                    const data = await res.json();
-                    metadata = JSON.stringify({
-                      title: data.title,
-                      author: data.author_name,
-                      author_url: data.author_url
-                    });
-                    localStorage.setItem(cacheKey, metadata);
-                  }
-                }
-
-                if (metadata) {
-                  const data = JSON.parse(metadata);
-                  // Update the displayed title and author
-                  const titleEl = listItem.querySelector('span[style*="font-weight: 500"]');
-                  const authorEl = listItem.querySelector('a[style*="font-weight: bold"]');
-                  if (titleEl) {
-                    titleEl.textContent = data.title || 'Unknown title';
-                  }
-                  if (authorEl) {
-                    authorEl.textContent = data.author || 'Unknown author';
-                    if (data.author_url) {
-                      authorEl.href = data.author_url;
+                  if (!metadata) {
+                    const res = await fetch(`https://noembed.com/embed?url=https://www.youtube.com/watch?v=${videoId}`);
+                    if (res.ok) {
+                      const data = await res.json();
+                      metadata = JSON.stringify({
+                        title: data.title,
+                        author: data.author_name,
+                        author_url: data.author_url
+                      });
+                      localStorage.setItem(cacheKey, metadata);
                     }
                   }
+
+                  if (metadata) {
+                    const data = JSON.parse(metadata);
+                    const titleEl = listItem.querySelector('span[style*="font-weight: 500"]');
+                    const authorEl = listItem.querySelector('a[style*="font-weight: bold"]');
+                    if (titleEl) titleEl.textContent = data.title || 'Unknown title';
+                    if (authorEl) {
+                      authorEl.textContent = data.author || 'Unknown author';
+                      if (data.author_url) authorEl.href = data.author_url;
+                    }
+                  }
+                } catch (e) {
+                  console.warn('Failed to fetch metadata for', videoId, e);
                 }
-              } catch (e) {
-                console.warn('Failed to fetch metadata for', videoId, e);
-              }
-            })();
+              })();
+            }
           }
 
           console.log('Successfully rendered', items.length, 'items');
@@ -1350,7 +1318,6 @@
       window.getAppStateTasks = getAppStateTasks;
       window.createAppStateTask = createAppStateTask;
       window.updateAppStateTask = updateAppStateTask;
-      window.addToWatchLater = addToWatchLater;
       window.loadWatchLater = loadWatchLater;
       window.initWatchLater = initWatchLater;
 
