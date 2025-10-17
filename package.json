@@ -1,0 +1,12 @@
+{
+  "name": "rutgersc-github-io",
+  "version": "1.0.0",
+  "description": "Local development server for GitHub Pages site",
+  "scripts": {
+    "start": "dev",
+    "dev": "http-server -p 8000 -o youtube.html"
+  },
+  "devDependencies": {
+    "http-server": "^14.1.1"
+  }
+}

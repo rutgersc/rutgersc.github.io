@@ -173,31 +173,70 @@
       >Viewport</button>
     </div>
 
-    <ul id="history_list"></ul>
-    <input
-      type="button"
-      id="clear-history-btn"
-      value="Clear History"
-      onclick="clearHistory()"
-      style="
-        display: block;
-        margin: 18px auto 10px auto;
-        width: 480px;
-        max-width: 90vw;
-        background: #232323;
-        color: #ff6b6b;
-        border: 1px solid #333;
-        border-radius: 8px;
-        font-size: 1rem;
-        font-weight: bold;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.12);
-        cursor: pointer;
-        transition: background 0.2s, color 0.2s;
-      "
-      onmouseover="this.style.background='#3a2323';this.style.color='#fff';"
-      onmouseout="this.style.background='#232323';this.style.color='#ff6b6b';"
-    />
-    <div id="msal-login-container" style="position: fixed; bottom: 16px; right: 16px; display: flex; flex-direction: column; align-items: flex-end; gap: 6px; z-index: 9999;">
+    <div style="display: flex; gap: 20px; justify-content: center; flex-wrap: wrap; margin-top: 20px;">
+      <div style="flex: 1; min-width: 300px; max-width: 600px;">
+        <h3 style="text-align: center; color: #8ecae6; margin-bottom: 10px;">History</h3>
+        <ul id="history_list"></ul>
+        <input
+          type="button"
+          id="clear-history-btn"
+          value="Clear History"
+          onclick="clearHistory()"
+          style="
+            display: block;
+            margin: 18px auto 10px auto;
+            width: 100%;
+            max-width: 480px;
+            background: #232323;
+            color: #ff6b6b;
+            border: 1px solid #333;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: bold;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+            cursor: pointer;
+            transition: background 0.2s, color 0.2s;
+          "
+          onmouseover="this.style.background='#3a2323';this.style.color='#fff';"
+          onmouseout="this.style.background='#232323';this.style.color='#ff6b6b';"
+        />
+      </div>
+      <div style="flex: 1; min-width: 300px; max-width: 600px;">
+        <h3 style="text-align: center; color: #ffd166; margin-bottom: 10px;">Watch Later</h3>
+        <div id="watch-later-status" style="text-align: center; color: #bbb; font-size: 0.9rem; padding: 20px;">
+          Sign in to sync watch later list
+        </div>
+        <ul id="watch_later_list"></ul>
+        <input
+          type="button"
+          id="refresh-watch-later-btn"
+          value="Refresh Watch Later"
+          onclick="loadWatchLater()"
+          style="
+            display: block;
+            margin: 18px auto 10px auto;
+            width: 100%;
+            max-width: 480px;
+            background: #232323;
+            color: #ffd166;
+            border: 1px solid #333;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: bold;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+            cursor: pointer;
+            transition: background 0.2s, color 0.2s;
+          "
+          onmouseover="this.style.background='#3a3323';this.style.color='#fff';"
+          onmouseout="this.style.background='#232323';this.style.color='#ffd166';"
+        />
+      </div>
+    </div>
+    <div id="msal-login-container" style="position: fixed; bottom: 16px; right: 16px; display: flex; flex-direction: column; align-items: flex-end; gap: 6px; z-index: 9999; max-width: 300px;">
+      <div id="msal-user-info" style="display: none; background: #1a1a1a; border: 1px solid #333; border-radius: 8px; padding: 10px 12px; margin-bottom: 4px; text-align: right;">
+        <div id="msal-user-name" style="color: #8ecae6; font-size: 0.95rem; font-weight: 600; margin-bottom: 2px;"></div>
+        <div id="msal-user-email" style="color: #bbb; font-size: 0.8rem; word-break: break-all;"></div>
+      </div>
       <button id="msal-login-btn" style="background: #232323; color: #8ecae6; border: 1px solid #333; border-radius: 8px; font-size: 0.95rem; font-weight: 600; padding: 8px 14px; box-shadow: 0 2px 8px rgba(0,0,0,0.12); cursor: pointer; transition: background 0.2s, color 0.2s;">Microsoft Sign in</button>
       <span id="msal-login-status" style="color: #bbb; font-size: 0.85rem;">Signed out</span>
     </div>
@@ -1056,11 +1095,17 @@
     <script>
       // Microsoft identity platform (MSAL) bootstrap for SPA
       // Using F# app registration clientId and consumers tenant (no secret)
+      // Auto-detect redirect URI based on environment
+      const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+      const redirectUri = isLocalhost
+        ? `http://${window.location.hostname}:8000/youtube.html`
+        : 'https://rutgersc.github.io/youtube.html';
+
       const msalConfig = {
         auth: {
           clientId: '57f0a441-626f-433e-b375-0c81f1203567',
           authority: 'https://login.microsoftonline.com/consumers',
-          redirectUri: 'https://rutgersc.github.io/youtube.html'
+          redirectUri: redirectUri
         },
         cache: { cacheLocation: 'localStorage', storeAuthStateInCookie: false }
       };
@@ -1070,16 +1115,43 @@
       function updateMsalUi() {
         const btn = document.getElementById('msal-login-btn');
         const status = document.getElementById('msal-login-status');
+        const userInfo = document.getElementById('msal-user-info');
+        const userName = document.getElementById('msal-user-name');
+        const userEmail = document.getElementById('msal-user-email');
         if (!btn || !status) return;
         const account = msalInstance.getActiveAccount();
         if (account) {
           btn.textContent = 'Sign out';
           btn.style.color = '#ff6b6b';
           status.textContent = 'Signed in';
+
+          // Log complete user info to console
+          console.log('=== MSAL User Account Info ===');
+          console.log('Complete account object:', account);
+          console.log('Name:', account.name);
+          console.log('Username:', account.username);
+          console.log('Local Account ID:', account.localAccountId);
+          console.log('Home Account ID:', account.homeAccountId);
+          console.log('Environment:', account.environment);
+          console.log('Tenant ID:', account.tenantId);
+          console.log('ID Token Claims:', account.idTokenClaims);
+          console.log('==============================');
+
+          // Show user info
+          if (userInfo && userName && userEmail) {
+            userName.textContent = account.name || 'User';
+            userEmail.textContent = account.username || '';
+            userInfo.style.display = 'block';
+          }
         } else {
           btn.textContent = 'Sign in';
           btn.style.color = '#8ecae6';
           status.textContent = 'Signed out';
+
+          // Hide user info
+          if (userInfo) {
+            userInfo.style.display = 'none';
+          }
         }
       }
 
@@ -1119,6 +1191,111 @@
 
       // Expose helper for other scripts to call Graph easily
       window.msalAcquireGraphToken = msalAcquireGraphToken;
+
+      // Microsoft To Do / Graph API helpers
+      async function callGraphApi(endpoint, method = 'GET', body = null) {
+        try {
+          const token = await msalAcquireGraphToken();
+          const headers = {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          };
+          const options = {
+            method,
+            headers
+          };
+          if (body) {
+            options.body = JSON.stringify(body);
+          }
+          const response = await fetch(`https://graph.microsoft.com/v1.0${endpoint}`, options);
+          if (!response.ok) {
+            throw new Error(`Graph API error: ${response.status} ${response.statusText}`);
+          }
+          return await response.json();
+        } catch (e) {
+          console.error('callGraphApi error:', e);
+          throw e;
+        }
+      }
+
+      async function getAppStateTodoList() {
+        try {
+          console.log('Fetching todo lists...');
+          const lists = await callGraphApi('/me/todo/lists');
+          console.log('All todo lists:', lists);
+
+          // Find the "appstate" list
+          const appStateList = lists.value.find(list => list.displayName.toLowerCase() === 'appstate');
+
+          if (appStateList) {
+            console.log('Found appstate list:', appStateList);
+            return appStateList;
+          } else {
+            console.log('appstate list not found, creating it...');
+            // Create the list if it doesn't exist
+            const newList = await callGraphApi('/me/todo/lists', 'POST', {
+              displayName: 'appstate'
+            });
+            console.log('Created appstate list:', newList);
+            return newList;
+          }
+        } catch (e) {
+          console.error('getAppStateTodoList error:', e);
+          throw e;
+        }
+      }
+
+      async function getAppStateTasks(listId) {
+        try {
+          console.log('Fetching tasks from appstate list...');
+          const tasks = await callGraphApi(`/me/todo/lists/${listId}/tasks`);
+          console.log('appstate tasks:', tasks);
+          return tasks.value;
+        } catch (e) {
+          console.error('getAppStateTasks error:', e);
+          throw e;
+        }
+      }
+
+      async function createAppStateTask(listId, title, body = '') {
+        try {
+          const task = await callGraphApi(`/me/todo/lists/${listId}/tasks`, 'POST', {
+            title: title,
+            body: {
+              content: body,
+              contentType: 'text'
+            }
+          });
+          console.log('Created task:', task);
+          return task;
+        } catch (e) {
+          console.error('createAppStateTask error:', e);
+          throw e;
+        }
+      }
+
+      async function updateAppStateTask(listId, taskId, title, body) {
+        try {
+          const task = await callGraphApi(`/me/todo/lists/${listId}/tasks/${taskId}`, 'PATCH', {
+            title: title,
+            body: {
+              content: body,
+              contentType: 'text'
+            }
+          });
+          console.log('Updated task:', task);
+          return task;
+        } catch (e) {
+          console.error('updateAppStateTask error:', e);
+          throw e;
+        }
+      }
+
+      // Expose functions globally for testing
+      window.getAppStateTodoList = getAppStateTodoList;
+      window.getAppStateTasks = getAppStateTasks;
+      window.createAppStateTask = createAppStateTask;
+      window.updateAppStateTask = updateAppStateTask;
 
       // Handle redirect responses if any, then set initial UI state
       msalInstance.handleRedirectPromise()
