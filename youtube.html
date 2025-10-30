@@ -588,7 +588,7 @@
         return { author_url: null };
       }
 
-      function apply_vid(vid) {
+      async function apply_vid(vid) {
         console.log("apply_vid", vid);
         if (vid) {
           // Show parsed URL
@@ -597,6 +597,10 @@
           const fullUrl = `https://www.youtube.com/watch?v=${vid}`;
           parsedUrlInput.value = fullUrl;
           parsedUrlContainer.style.display = "block";
+
+          // Check if video is in watch later
+          const checklistItemId = await isVideoInWatchLater(vid);
+          const wasWatchLater = checklistItemId !== null;
 
           player.loadVideoById(vid);
 
@@ -608,7 +612,16 @@
               const details = await resolveChannelDetails(videoData.video_id);
               if (details?.author_url) videoData.author_url = details.author_url;
             } catch (e) {}
-            addToHistory(videoData, document.title);
+
+            // Add to history with wasWatchLater flag
+            addToHistory(videoData, document.title, wasWatchLater);
+
+            // If it was in watch later, remove it
+            if (checklistItemId) {
+              await removeFromWatchLater(checklistItemId, null);
+              // Reload watch later list to reflect the change
+              await loadWatchLater();
+            }
           }, 2000);
         }
       }
@@ -618,7 +631,7 @@
         return history;
       }
 
-      function addToHistory(videoData, name) {
+      function addToHistory(videoData, name, wasWatchLater = false) {
         const history = getHistory();
 
         // Remove any existing entry with the same video_id
@@ -627,7 +640,7 @@
 
         // Add the new entry to the front with timestamp
         const timestamp = new Date().toISOString();
-        filteredHistory.unshift({ videoData, timestamp });
+        filteredHistory.unshift({ videoData, timestamp, wasWatchLater });
         localStorage.setItem("history", JSON.stringify(filteredHistory));
 
         console.log(history);
@@ -640,7 +653,8 @@
           onRemove = null,
           removeButtonText = '🗑️',
           removeButtonTitle = 'Remove',
-          onPlay = null
+          onPlay = null,
+          wasWatchLater = false
         } = options;
           const listItem = document.createElement("li");
           listItem.style.background = "#232323";
@@ -653,7 +667,8 @@
           listItem.style.flexDirection = "column";
           listItem.style.alignItems = "flex-start";
           listItem.style.gap = "4px";
-          listItem.style.border = "1px solid #333";
+          // Use golden color border if video was from watch later
+          listItem.style.border = wasWatchLater ? "1px solid #ffd166" : "1px solid #333";
 
           // Top row: author, id (clickable), play button
           const topRow = document.createElement("div");
@@ -858,7 +873,7 @@
         const history = getHistory();
         console.log("renderHistory", history);
 
-        history.forEach(({ videoData, timestamp }) => {
+        history.forEach(({ videoData, timestamp, wasWatchLater }) => {
           const listItem = renderVideoItem(videoData, timestamp, {
             onRemove: (videoId) => {
               // Remove from history
@@ -866,7 +881,8 @@
               const filtered = history.filter(item => item.videoData.video_id !== videoId);
               localStorage.setItem("history", JSON.stringify(filtered));
               renderHistory();
-            }
+            },
+            wasWatchLater: wasWatchLater || false
           });
           history_list.appendChild(listItem);
         });
@@ -1260,6 +1276,31 @@
         }
       }
 
+      async function isVideoInWatchLater(videoId) {
+        try {
+          if (!watchLaterTaskId) return null;
+          const items = await getWatchLaterChecklistItems();
+          for (const item of items) {
+            try {
+              const videoData = JSON.parse(item.displayName);
+              if (videoData.video_id === videoId) {
+                return item.id; // Return the checklist item ID
+              }
+            } catch (e) {
+              // Try as plain video ID
+              const id = extractYouTubeId(item.displayName) || item.displayName;
+              if (id === videoId) {
+                return item.id;
+              }
+            }
+          }
+          return null;
+        } catch (e) {
+          console.error('isVideoInWatchLater error:', e);
+          return null;
+        }
+      }
+
       async function removeFromWatchLater(checklistItemId, listItemElement) {
         // Immediately remove from UI (optimistic update)
         if (listItemElement && listItemElement.parentNode) {
@@ -1348,8 +1389,8 @@
           // Step 2: Map videoData to list items
           const listItems = videoDataList.map(({ videoData, checklistItemId }) => {
             const element = renderVideoItem(videoData, null, {
-              onRemove: (vid) => removeFromWatchLater(checklistItemId, element),
-              onPlay: (vid) => removeFromWatchLater(checklistItemId, element)
+              onRemove: (vid) => removeFromWatchLater(checklistItemId, element)
+              // No onPlay needed - apply_vid will handle removal from watch later
             });
             return { element, videoData };
           });
