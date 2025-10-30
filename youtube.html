@@ -1493,6 +1493,20 @@
             }
           };
         }
+
+        // Restore mobile login flow preference
+        const forceMobileCheckbox = document.getElementById('msal-force-mobile');
+        if (forceMobileCheckbox) {
+          const savedPreference = localStorage.getItem('msal-force-mobile');
+          if (savedPreference === 'true') {
+            forceMobileCheckbox.checked = true;
+          }
+
+          forceMobileCheckbox.addEventListener('change', function() {
+            localStorage.setItem('msal-force-mobile', this.checked.toString());
+          });
+        }
+
         updateMsalUi();
       });
     </script>
