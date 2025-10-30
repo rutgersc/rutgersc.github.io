@@ -1108,10 +1108,25 @@
           const res = await msalInstance.acquireTokenSilent({ scopes: msalScopes, account });
           return res.accessToken;
         } catch (e) {
-          const res = await msalInstance.acquireTokenPopup({ scopes: msalScopes });
-          msalInstance.setActiveAccount(res.account);
-          updateMsalUi();
-          return res.accessToken;
+          console.warn('acquireTokenSilent failed, using interactive flow', e);
+
+          // Check if using mobile flow
+          const forceMobileCheckbox = document.getElementById('msal-force-mobile');
+          const useMobileFlow = forceMobileCheckbox ? forceMobileCheckbox.checked : false;
+
+          if (useMobileFlow) {
+            // Use redirect flow - store what we're doing for after redirect
+            sessionStorage.setItem('msal-acquiring-token', 'true');
+            await msalInstance.acquireTokenRedirect({ scopes: msalScopes });
+            // Note: control won't return here - page will redirect
+            throw new Error('Redirecting for token acquisition');
+          } else {
+            // Use popup flow
+            const res = await msalInstance.acquireTokenPopup({ scopes: msalScopes });
+            msalInstance.setActiveAccount(res.account);
+            updateMsalUi();
+            return res.accessToken;
+          }
         }
       }
 
@@ -1468,6 +1483,19 @@
         .then((response) => {
           if (response && response.account) {
             msalInstance.setActiveAccount(response.account);
+
+            // Check if we were acquiring a token
+            const wasAcquiringToken = sessionStorage.getItem('msal-acquiring-token');
+            if (wasAcquiringToken === 'true') {
+              sessionStorage.removeItem('msal-acquiring-token');
+              console.log('Token acquisition redirect completed, retrying watch later load');
+              // Retry loading watch later after token acquisition
+              if (watchLaterTaskId) {
+                loadWatchLater().catch(e => console.error('Failed to load watch later after redirect:', e));
+              } else {
+                initWatchLater().catch(e => console.error('Failed to init watch later after redirect:', e));
+              }
+            }
           } else {
             const accounts = msalInstance.getAllAccounts();
             if (accounts && accounts.length > 0) {
@@ -1506,6 +1534,9 @@
             localStorage.setItem('msal-force-mobile', this.checked.toString());
           });
         }
+
+        // Render history on page load
+        renderHistory();
 
         updateMsalUi();
       });
