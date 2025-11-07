@@ -1,4 +1,4 @@
-import { extractYouTubeId, formatTime } from './video-utils.js';
+import { extractYouTubeId, extractTimestamp, formatTime } from './video-utils.js';
 import { addToHistory } from './history.js';
 import { isVideoInWatchLater, removeFromWatchLater, loadWatchLater } from './watch-later.js';
 import { resolveChannelDetails } from './video-utils.js';
@@ -255,6 +255,12 @@ export async function apply_vid(vid) {
 export function apply_input_vid(str) {
   const video_id = extractYouTubeId(str);
   if (video_id) {
+    // Extract timestamp from URL if present
+    const timestamp = extractTimestamp(str);
+    if (timestamp !== null) {
+      // Save URL timestamp to localStorage so startSeek will use it
+      localStorage.setItem("vid-" + video_id, timestamp);
+    }
     window.location.hash = "#" + video_id;
   }
 }

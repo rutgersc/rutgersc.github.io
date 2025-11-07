@@ -33,6 +33,23 @@ export function extractYouTubeId(input) {
   return null; // couldn't extract ID
 }
 
+export function extractTimestamp(input) {
+  try {
+    const url = new URL(input);
+
+    // Check for 't' parameter in search params (works for all YouTube URLs)
+    const tParam = url.searchParams.get('t');
+    if (tParam) {
+      // Remove 's' suffix if present (e.g., "1671s" -> "1671")
+      return parseInt(tParam.replace(/s$/i, ''));
+    }
+  } catch (e) {
+    // input is not a valid URL
+  }
+
+  return null;
+}
+
 export function formatTime(sec) {
   sec = Math.floor(sec);
   const h = Math.floor(sec / 3600);
