@@ -1,7 +1,7 @@
 import { getTimeAgo, formatTime } from './video-utils.js';
 import { apply_input_vid } from './youtube-player.js';
 
-export function renderVideoItem(videoData, timestamp, options = {}) {
+export function renderVideoItem(videoData, dateViewed, options = {}) {
   const {
     onRemove = null,
     removeButtonText = '🗑️',
@@ -99,16 +99,16 @@ export function renderVideoItem(videoData, timestamp, options = {}) {
     videoTimestampSpan.title = `Video will start at ${formatTime(videoData.timestamp)}`;
   }
 
-  // Add timestamp if available
-  const timestampSpan = document.createElement("span");
-  if (timestamp) {
-    const date = new Date(timestamp);
+  // Add dateViewed if available
+  const dateViewedSpan = document.createElement("span");
+  if (dateViewed) {
+    const date = new Date(dateViewed);
     const timeAgo = getTimeAgo(date);
-    timestampSpan.textContent = timeAgo;
-    timestampSpan.style.fontSize = "0.8rem";
-    timestampSpan.style.color = "#888";
-    timestampSpan.style.fontStyle = "italic";
-    timestampSpan.style.marginLeft = "12px";
+    dateViewedSpan.textContent = timeAgo;
+    dateViewedSpan.style.fontSize = "0.8rem";
+    dateViewedSpan.style.color = "#888";
+    dateViewedSpan.style.fontStyle = "italic";
+    dateViewedSpan.style.marginLeft = "12px";
   }
 
   const playButton = document.createElement("button");
@@ -175,8 +175,8 @@ export function renderVideoItem(videoData, timestamp, options = {}) {
   if (videoData.timestamp) {
     leftGroup.appendChild(videoTimestampSpan);
   }
-  if (timestamp) {
-    leftGroup.appendChild(timestampSpan);
+  if (dateViewed) {
+    leftGroup.appendChild(dateViewedSpan);
   }
 
   topRow.appendChild(leftGroup);

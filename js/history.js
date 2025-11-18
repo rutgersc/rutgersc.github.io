@@ -2,7 +2,27 @@ import { renderVideoItem } from './ui.js';
 
 export function getHistory() {
   const history = JSON.parse(localStorage.getItem("history") || "[]");
-  return history;
+
+  // Migrate old format (timestamp) to new format (dateViewed)
+  let needsMigration = false;
+  const migratedHistory = history.map(item => {
+    if (item.timestamp && !item.dateViewed) {
+      needsMigration = true;
+      return {
+        videoData: item.videoData,
+        dateViewed: item.timestamp,
+        wasWatchLater: item.wasWatchLater || false
+      };
+    }
+    return item;
+  });
+
+  // Save migrated data back to localStorage
+  if (needsMigration) {
+    localStorage.setItem("history", JSON.stringify(migratedHistory));
+  }
+
+  return migratedHistory;
 }
 
 export function addToHistory(videoData, name, wasWatchLater = false) {
@@ -19,9 +39,9 @@ export function addToHistory(videoData, name, wasWatchLater = false) {
   const filteredHistory = history
     .filter((item) => item.videoData.video_id !== videoData.video_id);
 
-  // Add the new entry to the front with timestamp
-  const timestamp = new Date().toISOString();
-  filteredHistory.unshift({ videoData, timestamp, wasWatchLater: preservedWasWatchLater });
+  // Add the new entry to the front with dateViewed
+  const dateViewed = new Date().toISOString();
+  filteredHistory.unshift({ videoData, dateViewed, wasWatchLater: preservedWasWatchLater });
   localStorage.setItem("history", JSON.stringify(filteredHistory));
 
   console.log(history);
@@ -35,8 +55,8 @@ export function renderHistory() {
   const history = getHistory();
   console.log("renderHistory", history);
 
-  history.forEach(({ videoData, timestamp, wasWatchLater }) => {
-    const listItem = renderVideoItem(videoData, timestamp, {
+  history.forEach(({ videoData, dateViewed, wasWatchLater }) => {
+    const listItem = renderVideoItem(videoData, dateViewed, {
       onRemove: (videoId) => {
         // Remove from history
         const history = getHistory();
