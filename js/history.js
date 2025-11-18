@@ -8,13 +8,20 @@ export function getHistory() {
 export function addToHistory(videoData, name, wasWatchLater = false) {
   const history = getHistory();
 
+  // Check if an existing entry has wasWatchLater = true
+  const existingEntry = history.find(
+    (item) => item.videoData.video_id === videoData.video_id
+  );
+  // Preserve wasWatchLater if it was previously true
+  const preservedWasWatchLater = (existingEntry?.wasWatchLater === true) || wasWatchLater;
+
   // Remove any existing entry with the same video_id
   const filteredHistory = history
     .filter((item) => item.videoData.video_id !== videoData.video_id);
 
   // Add the new entry to the front with timestamp
   const timestamp = new Date().toISOString();
-  filteredHistory.unshift({ videoData, timestamp, wasWatchLater });
+  filteredHistory.unshift({ videoData, timestamp, wasWatchLater: preservedWasWatchLater });
   localStorage.setItem("history", JSON.stringify(filteredHistory));
 
   console.log(history);
