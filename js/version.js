@@ -1,2 +1,2 @@
 // VERSION - Auto-updated by git pre-commit hook
-export const APP_VERSION = '20251118-2152';
+export const APP_VERSION = '20251118-2154';

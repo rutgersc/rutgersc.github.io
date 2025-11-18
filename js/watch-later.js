@@ -1,5 +1,5 @@
 import { callGraphApi, getAppStateTodoList, getAppStateTasks, createAppStateTask } from './graph-api.js';
-import { extractYouTubeId } from './video-utils.js';
+import { extractYouTubeId, extractTimestamp } from './video-utils.js';
 import { renderVideoItem } from './ui.js';
 
 export let watchLaterTaskId = null;
@@ -154,27 +154,31 @@ export async function loadWatchLater() {
         if (!videoData.video_id) {
           throw new Error('No video_id in parsed data');
         }
-        return { videoData, checklistItemId: item.id };
+        return { videoData, checklistItemId: item.id, originalUrl: null };
       } catch (e) {
-        // Fallback: treat displayName as plain video ID (old format)
+        // Fallback: treat displayName as plain video ID or URL (old format)
         const videoId = extractYouTubeId(item.displayName) || item.displayName;
+        const timestamp = extractTimestamp(item.displayName);
         return {
           videoData: {
             video_id: videoId,
             title: 'Loading...',
             author: 'Loading...',
-            author_url: null
+            author_url: null,
+            timestamp: timestamp // Store timestamp in videoData
           },
-          checklistItemId: item.id
+          checklistItemId: item.id,
+          originalUrl: item.displayName // Keep original URL for playing with timestamp
         };
       }
     });
 
     // Step 2: Map videoData to list items
-    const listItems = videoDataList.map(({ videoData, checklistItemId }) => {
+    const listItems = videoDataList.map(({ videoData, checklistItemId, originalUrl }) => {
       const element = renderVideoItem(videoData, null, {
-        onRemove: (vid) => removeFromWatchLater(checklistItemId, element)
+        onRemove: (vid) => removeFromWatchLater(checklistItemId, element),
         // No onPlay needed - apply_vid will handle removal from watch later
+        playUrl: originalUrl // Pass the original URL with timestamp if available
       });
       return { element, videoData };
     });

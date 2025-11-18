@@ -1,4 +1,4 @@
-import { getTimeAgo } from './video-utils.js';
+import { getTimeAgo, formatTime } from './video-utils.js';
 import { apply_input_vid } from './youtube-player.js';
 
 export function renderVideoItem(videoData, timestamp, options = {}) {
@@ -7,7 +7,8 @@ export function renderVideoItem(videoData, timestamp, options = {}) {
     removeButtonText = '🗑️',
     removeButtonTitle = 'Remove',
     onPlay = null,
-    wasWatchLater = false
+    wasWatchLater = false,
+    playUrl = null // URL with timestamp to play
   } = options;
 
   const listItem = document.createElement("li");
@@ -72,7 +73,9 @@ export function renderVideoItem(videoData, timestamp, options = {}) {
   idP.style.cursor = "pointer";
   idP.style.textDecoration = "none";
   idP.title = "Open video in new tab";
-  idP.href = `https://www.youtube.com/watch?v=${videoData.video_id}`;
+  // Include timestamp in URL if available
+  const timestampParam = videoData.timestamp ? `&t=${videoData.timestamp}` : '';
+  idP.href = `https://www.youtube.com/watch?v=${videoData.video_id}${timestampParam}`;
   idP.target = "_blank";
   idP.rel = "noopener noreferrer";
 
@@ -84,6 +87,17 @@ export function renderVideoItem(videoData, timestamp, options = {}) {
     idP.style.textDecoration = "none";
     idP.style.color = "#bdbdbd";
   };
+
+  // Add video timestamp indicator if available
+  const videoTimestampSpan = document.createElement("span");
+  if (videoData.timestamp) {
+    videoTimestampSpan.textContent = `@${formatTime(videoData.timestamp)}`;
+    videoTimestampSpan.style.fontSize = "0.8rem";
+    videoTimestampSpan.style.color = "#ffd166";
+    videoTimestampSpan.style.fontStyle = "italic";
+    videoTimestampSpan.style.marginLeft = "8px";
+    videoTimestampSpan.title = `Video will start at ${formatTime(videoData.timestamp)}`;
+  }
 
   // Add timestamp if available
   const timestampSpan = document.createElement("span");
@@ -114,7 +128,8 @@ export function renderVideoItem(videoData, timestamp, options = {}) {
     if (onPlay) {
       onPlay(videoData.video_id);
     }
-    apply_input_vid(videoData.video_id);
+    // Use playUrl if provided (for watch later items with timestamps), otherwise use video_id
+    apply_input_vid(playUrl || videoData.video_id);
   };
 
   // Remove button (if onRemove callback provided)
@@ -157,6 +172,9 @@ export function renderVideoItem(videoData, timestamp, options = {}) {
   leftGroup.style.alignItems = "center";
   leftGroup.appendChild(authorP);
   leftGroup.appendChild(idP);
+  if (videoData.timestamp) {
+    leftGroup.appendChild(videoTimestampSpan);
+  }
   if (timestamp) {
     leftGroup.appendChild(timestampSpan);
   }
