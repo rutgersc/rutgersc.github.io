@@ -8,7 +8,9 @@ export function renderVideoItem(videoData, dateViewed, options = {}) {
     removeButtonTitle = 'Remove',
     onPlay = null,
     wasWatchLater = false,
-    playUrl = null // URL with timestamp to play
+    playUrl = null, // URL with timestamp to play
+    onCompact = null, // Callback for compacting history up to this point
+    showCompactButton = false // Whether to show the compact button
   } = options;
 
   const listItem = document.createElement("li");
@@ -151,6 +153,25 @@ export function renderVideoItem(videoData, dateViewed, options = {}) {
     removeButton.onclick = () => onRemove(videoData.video_id);
   }
 
+  // Compact button (if showCompactButton is true)
+  let compactButton = null;
+  if (showCompactButton && onCompact) {
+    compactButton = document.createElement("button");
+    compactButton.textContent = "📦";
+    compactButton.title = "Compact history up to this point";
+    compactButton.style.background = "#4a5568";
+    compactButton.style.color = "#fff";
+    compactButton.style.border = "none";
+    compactButton.style.borderRadius = "4px";
+    compactButton.style.padding = "4px 10px";
+    compactButton.style.cursor = "pointer";
+    compactButton.style.fontSize = "1.1em";
+    compactButton.style.marginLeft = "8px";
+    compactButton.onmouseenter = () => compactButton.style.background = "#5a6678";
+    compactButton.onmouseleave = () => compactButton.style.background = "#4a5568";
+    compactButton.onclick = () => onCompact();
+  }
+
   // Expand/Collapse button
   const expandBtn = document.createElement("button");
   expandBtn.textContent = "▾";
@@ -183,6 +204,7 @@ export function renderVideoItem(videoData, dateViewed, options = {}) {
   const rightGroup = document.createElement("span");
   rightGroup.appendChild(playButton);
   if (removeButton) rightGroup.appendChild(removeButton);
+  if (compactButton) rightGroup.appendChild(compactButton);
   rightGroup.appendChild(expandBtn);
   topRow.appendChild(rightGroup);
 
@@ -238,6 +260,182 @@ export function renderVideoItem(videoData, dateViewed, options = {}) {
   listItem.appendChild(expandContainer);
 
   return listItem;
+}
+
+// Render compacted history section with collapsible channels
+export function renderCompactedSection(compacted) {
+  const section = document.createElement("div");
+  section.style.background = "#1a1a1a";
+  section.style.borderRadius = "8px";
+  section.style.margin = "12px auto";
+  section.style.padding = "16px";
+  section.style.maxWidth = "480px";
+  section.style.boxShadow = "0 2px 8px rgba(0,0,0,0.12)";
+  section.style.border = "2px solid #4a5568";
+
+  // Header
+  const header = document.createElement("div");
+  header.style.display = "flex";
+  header.style.justifyContent = "space-between";
+  header.style.alignItems = "center";
+  header.style.marginBottom = "12px";
+
+  const title = document.createElement("h4");
+  title.textContent = "Compacted History";
+  title.style.color = "#8ecae6";
+  title.style.margin = "0";
+  title.style.fontSize = "1.1rem";
+
+  const compactedDate = document.createElement("span");
+  compactedDate.textContent = getTimeAgo(new Date(compacted.compactedAt));
+  compactedDate.style.color = "#888";
+  compactedDate.style.fontSize = "0.85rem";
+  compactedDate.style.fontStyle = "italic";
+
+  header.appendChild(title);
+  header.appendChild(compactedDate);
+  section.appendChild(header);
+
+  // Render each channel
+  compacted.channels.forEach(channel => {
+    const channelItem = document.createElement("div");
+    channelItem.style.marginBottom = "12px";
+    channelItem.style.background = "#232323";
+    channelItem.style.borderRadius = "6px";
+    channelItem.style.padding = "10px";
+    channelItem.style.border = "1px solid #333";
+
+    // Channel header (collapsible)
+    const channelHeader = document.createElement("div");
+    channelHeader.style.display = "flex";
+    channelHeader.style.justifyContent = "space-between";
+    channelHeader.style.alignItems = "center";
+    channelHeader.style.cursor = "pointer";
+
+    const channelName = document.createElement("a");
+    channelName.textContent = channel.author;
+    channelName.style.color = "#8ecae6";
+    channelName.style.fontWeight = "bold";
+    channelName.style.fontSize = "1rem";
+    channelName.style.textDecoration = "none";
+
+    // Set channel link
+    if (channel.author_url) {
+      channelName.href = channel.author_url;
+    } else if (channel.author_id) {
+      channelName.href = `https://www.youtube.com/channel/${channel.author_id}`;
+    } else {
+      channelName.href = `https://www.youtube.com/results?search_query=${encodeURIComponent(channel.author)}`;
+    }
+    channelName.target = "_blank";
+    channelName.rel = "noopener noreferrer";
+
+    channelName.onmouseenter = () => {
+      channelName.style.textDecoration = "underline";
+      channelName.style.color = "#ffd166";
+    };
+    channelName.onmouseleave = () => {
+      channelName.style.textDecoration = "none";
+      channelName.style.color = "#8ecae6";
+    };
+
+    const videoCount = document.createElement("span");
+    videoCount.textContent = `${channel.videos.length} video${channel.videos.length !== 1 ? 's' : ''}`;
+    videoCount.style.color = "#bbb";
+    videoCount.style.fontSize = "0.9rem";
+    videoCount.style.marginLeft = "12px";
+
+    const toggleIcon = document.createElement("span");
+    toggleIcon.textContent = "▾";
+    toggleIcon.style.color = "#bbb";
+    toggleIcon.style.fontSize = "1.2rem";
+
+    const leftSide = document.createElement("div");
+    leftSide.style.display = "flex";
+    leftSide.style.alignItems = "center";
+    leftSide.appendChild(channelName);
+    leftSide.appendChild(videoCount);
+
+    channelHeader.appendChild(leftSide);
+    channelHeader.appendChild(toggleIcon);
+
+    // Videos container (initially hidden)
+    const videosContainer = document.createElement("div");
+    videosContainer.style.display = "none";
+    videosContainer.style.marginTop = "10px";
+    videosContainer.style.paddingTop = "10px";
+    videosContainer.style.borderTop = "1px solid #333";
+
+    // Render each video as a compact 1-liner
+    channel.videos.forEach(video => {
+      const videoLine = document.createElement("div");
+      videoLine.style.display = "flex";
+      videoLine.style.alignItems = "center";
+      videoLine.style.justifyContent = "space-between";
+      videoLine.style.padding = "6px 0";
+      videoLine.style.fontSize = "0.9rem";
+      videoLine.style.borderBottom = "1px solid #2a2a2a";
+
+      const videoInfo = document.createElement("div");
+      videoInfo.style.display = "flex";
+      videoInfo.style.flexDirection = "column";
+      videoInfo.style.flex = "1";
+      videoInfo.style.marginRight = "10px";
+      videoInfo.style.minWidth = "0";
+
+      const videoTitle = document.createElement("div");
+      videoTitle.textContent = video.videoData.title;
+      videoTitle.style.color = "#fff";
+      videoTitle.style.fontSize = "0.85rem";
+      videoTitle.style.whiteSpace = "nowrap";
+      videoTitle.style.overflow = "hidden";
+      videoTitle.style.textOverflow = "ellipsis";
+      videoTitle.style.marginBottom = "2px";
+
+      const videoDate = document.createElement("div");
+      videoDate.textContent = getTimeAgo(new Date(video.dateViewed));
+      videoDate.style.color = "#888";
+      videoDate.style.fontSize = "0.75rem";
+
+      videoInfo.appendChild(videoTitle);
+      videoInfo.appendChild(videoDate);
+
+      const playBtn = document.createElement("button");
+      playBtn.textContent = "▶️";
+      playBtn.title = "Play";
+      playBtn.style.background = "#2d6a4f";
+      playBtn.style.color = "#fff";
+      playBtn.style.border = "none";
+      playBtn.style.borderRadius = "4px";
+      playBtn.style.padding = "4px 8px";
+      playBtn.style.cursor = "pointer";
+      playBtn.style.fontSize = "0.9em";
+      playBtn.style.flexShrink = "0";
+      playBtn.onmouseenter = () => playBtn.style.background = "#40916c";
+      playBtn.onmouseleave = () => playBtn.style.background = "#2d6a4f";
+      playBtn.onclick = () => apply_input_vid(video.videoData.video_id);
+
+      videoLine.appendChild(videoInfo);
+      videoLine.appendChild(playBtn);
+      videosContainer.appendChild(videoLine);
+    });
+
+    // Toggle collapse/expand
+    channelHeader.onclick = (e) => {
+      // Don't toggle if clicking the channel link
+      if (e.target === channelName) return;
+
+      const isHidden = videosContainer.style.display === "none";
+      videosContainer.style.display = isHidden ? "block" : "none";
+      toggleIcon.textContent = isHidden ? "▴" : "▾";
+    };
+
+    channelItem.appendChild(channelHeader);
+    channelItem.appendChild(videosContainer);
+    section.appendChild(channelItem);
+  });
+
+  return section;
 }
 
 // Viewport management

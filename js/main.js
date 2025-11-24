@@ -1,6 +1,6 @@
 import { APP_VERSION } from './version.js';
 import { initializePlayer, select_input_vid, apply_input_vid_from_button } from './youtube-player.js';
-import { renderHistory, clearHistory } from './history.js';
+import { renderHistory, clearHistory, dumpAllEvents } from './history.js';
 import { msalLogin, msalLogout, handleRedirectPromise, msalInstance } from './auth.js';
 import { loadWatchLater } from './watch-later.js';
 import { initViewportManager } from './ui.js';
@@ -11,6 +11,7 @@ window.select_input_vid = select_input_vid;
 window.apply_input_vid_from_button = apply_input_vid_from_button;
 window.clearHistory = clearHistory;
 window.loadWatchLater = loadWatchLater;
+window.dumpAllEvents = dumpAllEvents;
 
 // Expose Graph API functions for testing
 window.getAppStateTodoList = getAppStateTodoList;
