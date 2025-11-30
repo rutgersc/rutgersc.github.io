@@ -56,12 +56,6 @@ export function renderHistory() {
   const compacted = getCompactedHistory();
   console.log("renderHistory", history);
 
-  // Render compacted section first if it exists
-  if (compacted) {
-    const compactedSection = renderCompactedSection(compacted);
-    history_list.appendChild(compactedSection);
-  }
-
   // Render current history items with compact buttons
   history.forEach(({ videoData, dateViewed, wasWatchLater }, index) => {
     const listItem = renderVideoItem(videoData, dateViewed, {
@@ -81,6 +75,12 @@ export function renderHistory() {
     });
     history_list.appendChild(listItem);
   });
+
+  // Render compacted section at the end if it exists
+  if (compacted) {
+    const compactedSection = renderCompactedSection(compacted);
+    history_list.appendChild(compactedSection);
+  }
 }
 
 export function clearHistory() {
