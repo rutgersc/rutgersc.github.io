@@ -1,5 +1,5 @@
 import { extractYouTubeId, extractTimestamp, formatTime } from './video-utils.js';
-import { addToHistory } from './history.js';
+import { addToHistory, updateHistoryProgress } from './history.js';
 import { isVideoInWatchLater, removeFromWatchLater, loadWatchLater } from './watch-later.js';
 import { resolveChannelDetails } from './video-utils.js';
 
@@ -83,8 +83,14 @@ function savePosition() {
   if (!player || !player.getVideoUrl) return;
   const vid = extractYouTubeId(player.getVideoUrl());
   const pos = player.getCurrentTime();
+  const duration = player.getDuration();
   console.log("savePosition", pos);
   localStorage.setItem("vid-" + vid, pos);
+
+  // Update progress in history
+  if (duration > 0) {
+    updateHistoryProgress(vid, pos, duration);
+  }
 }
 
 function getPosition() {
@@ -239,8 +245,15 @@ export async function apply_vid(vid) {
         if (details?.author_url) videoData.author_url = details.author_url;
       } catch (e) {}
 
-      // Add to history with wasWatchLater flag
-      addToHistory(videoData, document.title, wasWatchLater);
+      // Get current progress from localStorage
+      const savedPosition = localStorage.getItem("vid-" + videoData.video_id);
+      const currentTime = savedPosition ? parseFloat(savedPosition) : 0;
+      const duration = player.getDuration() || 0;
+
+      const progress = duration > 0 ? { currentTime, duration } : null;
+
+      // Add to history with wasWatchLater flag and progress
+      addToHistory(videoData, document.title, wasWatchLater, progress);
 
       // If it was in watch later, remove it
       if (checklistItemId) {

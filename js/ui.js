@@ -10,7 +10,8 @@ export function renderVideoItem(videoData, dateViewed, options = {}) {
     wasWatchLater = false,
     playUrl = null, // URL with timestamp to play
     onCompact = null, // Callback for compacting history up to this point
-    showCompactButton = false // Whether to show the compact button
+    showCompactButton = false, // Whether to show the compact button
+    progress = null // Progress object with currentTime, duration, percentage
   } = options;
 
   const listItem = document.createElement("li");
@@ -218,6 +219,43 @@ export function renderVideoItem(videoData, dateViewed, options = {}) {
   titleP.style.marginBottom = "2px";
   titleP.style.wordBreak = "break-word";
 
+  // Progress bar (if progress is available)
+  let progressBar = null;
+  if (progress && progress.percentage !== undefined) {
+    progressBar = document.createElement("div");
+    progressBar.style.width = "100%";
+    progressBar.style.marginTop = "6px";
+    progressBar.style.marginBottom = "4px";
+
+    // Progress bar container
+    const progressBarContainer = document.createElement("div");
+    progressBarContainer.style.width = "100%";
+    progressBarContainer.style.height = "8px";
+    progressBarContainer.style.background = "#1a1a1a";
+    progressBarContainer.style.borderRadius = "4px";
+    progressBarContainer.style.overflow = "hidden";
+    progressBarContainer.style.border = "1px solid #333";
+
+    // Progress bar fill
+    const progressBarFill = document.createElement("div");
+    progressBarFill.style.width = `${Math.min(progress.percentage, 100)}%`;
+    progressBarFill.style.height = "100%";
+    progressBarFill.style.background = progress.percentage >= 90 ? "#52b788" : "#ffd166";
+    progressBarFill.style.transition = "width 0.3s ease";
+
+    progressBarContainer.appendChild(progressBarFill);
+
+    // Progress text
+    const progressText = document.createElement("div");
+    progressText.style.fontSize = "0.75rem";
+    progressText.style.color = "#aaa";
+    progressText.style.marginTop = "2px";
+    progressText.textContent = `${formatTime(progress.currentTime)} / ${formatTime(progress.duration)} (${Math.round(progress.percentage)}%)`;
+
+    progressBar.appendChild(progressBarContainer);
+    progressBar.appendChild(progressText);
+  }
+
   // Expandable container for latest videos
   const expandContainer = document.createElement("div");
   expandContainer.style.display = "none";
@@ -257,6 +295,9 @@ export function renderVideoItem(videoData, dateViewed, options = {}) {
   // Assemble
   listItem.appendChild(topRow);
   listItem.appendChild(titleP);
+  if (progressBar) {
+    listItem.appendChild(progressBar);
+  }
   listItem.appendChild(expandContainer);
 
   return listItem;
