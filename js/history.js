@@ -25,7 +25,7 @@ export function getHistory() {
   return migratedHistory;
 }
 
-export function addToHistory(videoData, name, wasWatchLater = false) {
+export function addToHistory(videoData, name, wasWatchLater = false, progress = null) {
   const history = getHistory();
 
   // Check if an existing entry has wasWatchLater = true
@@ -39,14 +39,44 @@ export function addToHistory(videoData, name, wasWatchLater = false) {
   const filteredHistory = history
     .filter((item) => item.videoData.video_id !== videoData.video_id);
 
-  // Add the new entry to the front with dateViewed
+  // Add the new entry to the front with dateViewed and progress
   const dateViewed = new Date().toISOString();
-  filteredHistory.unshift({ videoData, dateViewed, wasWatchLater: preservedWasWatchLater });
+  const entry = {
+    videoData,
+    dateViewed,
+    wasWatchLater: preservedWasWatchLater
+  };
+
+  // Add progress if available
+  if (progress && progress.currentTime !== undefined && progress.duration !== undefined) {
+    entry.progress = {
+      currentTime: progress.currentTime,
+      duration: progress.duration,
+      percentage: progress.duration > 0 ? (progress.currentTime / progress.duration) * 100 : 0
+    };
+  }
+
+  filteredHistory.unshift(entry);
   localStorage.setItem("history", JSON.stringify(filteredHistory));
 
   console.log(history);
 
   renderHistory();
+}
+
+export function updateHistoryProgress(videoId, currentTime, duration) {
+  const history = getHistory();
+  const entry = history.find(item => item.videoData.video_id === videoId);
+
+  if (entry && duration > 0) {
+    entry.progress = {
+      currentTime,
+      duration,
+      percentage: (currentTime / duration) * 100
+    };
+    localStorage.setItem("history", JSON.stringify(history));
+    // Don't re-render to avoid flickering - progress will be visible on next page load
+  }
 }
 
 export function renderHistory() {
@@ -57,7 +87,7 @@ export function renderHistory() {
   console.log("renderHistory", history);
 
   // Render current history items with compact buttons
-  history.forEach(({ videoData, dateViewed, wasWatchLater }, index) => {
+  history.forEach(({ videoData, dateViewed, wasWatchLater, progress }, index) => {
     const listItem = renderVideoItem(videoData, dateViewed, {
       onRemove: (videoId) => {
         // Remove from history
@@ -67,6 +97,7 @@ export function renderHistory() {
         renderHistory();
       },
       wasWatchLater: wasWatchLater || false,
+      progress: progress || null,
       showCompactButton: true,
       onCompact: () => {
         // Compact history up to and including this index
