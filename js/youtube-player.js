@@ -6,6 +6,7 @@ import { resolveChannelDetails } from './video-utils.js';
 export let player;
 let savingTimer;
 let currentPlayerState = -1;
+let isInitialSeek = false; // Flag to prevent saving during initial seek
 
 let timeline;
 let timelineTime;
@@ -81,6 +82,13 @@ function onPlayerStateChange(e) {
 
 function savePosition() {
   if (!player || !player.getVideoUrl) return;
+
+  // Don't save position during initial seek to prevent overwriting saved progress
+  if (isInitialSeek) {
+    console.log("savePosition: skipping during initial seek");
+    return;
+  }
+
   const vid = extractYouTubeId(player.getVideoUrl());
   const pos = player.getCurrentTime();
   const duration = player.getDuration();
@@ -213,6 +221,11 @@ function startSeek(retryDelay) {
     const tstamp = getPosition();
     console.log("seekTo", tstamp);
     player.seekTo(tstamp, true);
+    // Clear the initial seek flag after a short delay to allow seek to complete
+    setTimeout(() => {
+      isInitialSeek = false;
+      console.log("Initial seek complete, position saving re-enabled");
+    }, 1000);
   } else {
     setTimeout(() => {
       startSeek(retryDelay * 2);
@@ -233,6 +246,9 @@ export async function apply_vid(vid) {
     // Check if video is in watch later
     const checklistItemId = await isVideoInWatchLater(vid);
     const wasWatchLater = checklistItemId !== null;
+
+    // Set flag to prevent saving position during initial seek
+    isInitialSeek = true;
 
     player.loadVideoById(vid);
 
