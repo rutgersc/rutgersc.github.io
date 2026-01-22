@@ -1,5 +1,5 @@
 import { initWatchLater, watchLaterTaskId, loadWatchLater } from './watch-later.js';
-import { initHistorySync, historyTaskId } from './history-sync.js';
+import { initHistorySync, historyTaskId, isHistorySyncEnabled } from './history-sync.js';
 
 // MSAL Configuration
 const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
@@ -56,8 +56,8 @@ export function updateMsalUi() {
       initWatchLater().catch(e => console.error('Failed to init watch later:', e));
     }
 
-    // Initialize history sync when signed in
-    if (!historyTaskId) {
+    // Initialize history sync when signed in (if enabled)
+    if (!historyTaskId && isHistorySyncEnabled()) {
       initHistorySync().catch(e => console.error('Failed to init history sync:', e));
     }
   } else {
@@ -187,8 +187,8 @@ export async function handleRedirectPromise() {
         } else {
           initWatchLater().catch(e => console.error('Failed to init watch later after redirect:', e));
         }
-        // Retry history sync after token acquisition
-        if (!historyTaskId) {
+        // Retry history sync after token acquisition (if enabled)
+        if (!historyTaskId && isHistorySyncEnabled()) {
           initHistorySync().catch(e => console.error('Failed to init history sync after redirect:', e));
         }
       }

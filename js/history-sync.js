@@ -12,8 +12,19 @@ let syncTimeout = null;
 let pendingSync = false;
 const SYNC_DEBOUNCE_MS = 30000; // 30 seconds
 
+// Check if history sync is enabled in settings
+export function isHistorySyncEnabled() {
+  return localStorage.getItem('history-sync-enabled') === 'true';
+}
+
 // Initialize history task in TODO
 export async function initHistorySync() {
+  // Check if history sync is enabled
+  if (!isHistorySyncEnabled()) {
+    console.log('History sync disabled in settings, skipping init');
+    return;
+  }
+
   // Prevent race conditions - return existing promise if initialization in progress
   if (initHistoryPromise) {
     return initHistoryPromise;
@@ -149,6 +160,9 @@ function mergeHistories(local, remote) {
 
 // Sync history to TODO (debounced)
 export function scheduleSyncToTodo() {
+  if (!isHistorySyncEnabled()) {
+    return;
+  }
   if (!historyTaskId || !historyListId) {
     console.log('History sync not initialized, skipping sync');
     return;
@@ -173,6 +187,9 @@ export function scheduleSyncToTodo() {
 
 // Sync history to TODO immediately
 export async function syncHistoryToTodo() {
+  if (!isHistorySyncEnabled()) {
+    return;
+  }
   if (!historyTaskId || !historyListId) {
     console.log('History sync not initialized, skipping sync');
     return;
@@ -201,6 +218,9 @@ export async function syncHistoryToTodo() {
 
 // Force sync immediately (useful when adding new video to history)
 export function syncHistoryNow() {
+  if (!isHistorySyncEnabled()) {
+    return;
+  }
   if (!historyTaskId || !historyListId) {
     console.log('History sync not initialized, skipping sync');
     return;
