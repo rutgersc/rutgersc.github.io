@@ -2,9 +2,10 @@
   "name": "rutgersc-github-io",
   "version": "1.0.0",
   "description": "Local development server for GitHub Pages site",
+  "private": true,
   "scripts": {
-    "start": "dev",
-    "build": "tsc",
+    "start": "npm run dev",
+    "build": "node scripts/update-version.js && tsc",
     "watch": "tsc --watch",
     "dev": "npm run build && http-server -p 8000 -o youtube.html"
   },
