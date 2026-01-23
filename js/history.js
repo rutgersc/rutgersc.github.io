@@ -1,4 +1,5 @@
 import { renderVideoItem, renderCompactedSection } from './ui.js';
+import { scheduleSyncToTodo, syncHistoryNow, isHistorySyncReady } from './history-sync.js';
 
 export function getHistory() {
   const history = JSON.parse(localStorage.getItem("history") || "[]");
@@ -62,6 +63,11 @@ export function addToHistory(videoData, name, wasWatchLater = false, progress = 
   console.log(history);
 
   renderHistory();
+
+  // Sync to TODO immediately when adding a new video
+  if (isHistorySyncReady()) {
+    syncHistoryNow();
+  }
 }
 
 export function updateHistoryProgress(videoId, currentTime, duration) {
@@ -76,6 +82,11 @@ export function updateHistoryProgress(videoId, currentTime, duration) {
     };
     localStorage.setItem("history", JSON.stringify(history));
     // Don't re-render to avoid flickering - progress will be visible on next page load
+
+    // Schedule debounced sync to TODO (every 30s max to avoid API overload)
+    if (isHistorySyncReady()) {
+      scheduleSyncToTodo();
+    }
   }
 }
 
@@ -95,6 +106,10 @@ export function renderHistory() {
         const filtered = history.filter(item => item.videoData.video_id !== videoId);
         localStorage.setItem("history", JSON.stringify(filtered));
         renderHistory();
+        // Sync removal to TODO
+        if (isHistorySyncReady()) {
+          syncHistoryNow();
+        }
       },
       wasWatchLater: wasWatchLater || false,
       progress: progress || null,
@@ -119,6 +134,11 @@ export function clearHistory() {
   localStorage.removeItem("history");
   localStorage.removeItem("compactedHistory");
   renderHistory();
+
+  // Sync cleared history to TODO
+  if (isHistorySyncReady()) {
+    syncHistoryNow();
+  }
 }
 
 // Get compacted history data
@@ -175,6 +195,11 @@ export function compactHistoryUpTo(index) {
 
   // Re-render
   renderHistory();
+
+  // Sync to TODO after compaction
+  if (isHistorySyncReady()) {
+    syncHistoryNow();
+  }
 }
 
 // Clear compacted history

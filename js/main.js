@@ -3,6 +3,7 @@ import { initializePlayer, select_input_vid, apply_input_vid_from_button } from 
 import { renderHistory, clearHistory, dumpAllEvents } from './history.js';
 import { msalLogin, msalLogout, handleRedirectPromise, msalInstance } from './auth.js';
 import { loadWatchLater } from './watch-later.js';
+import { initHistorySync, isHistorySyncEnabled } from './history-sync.js';
 import { initViewportManager } from './ui.js';
 import { getAppStateTodoList, getAppStateTasks, createAppStateTask, updateAppStateTask } from './graph-api.js';
 
@@ -52,6 +53,23 @@ document.addEventListener('DOMContentLoaded', function() {
 
     forceMobileCheckbox.addEventListener('change', function() {
       localStorage.setItem('msal-force-mobile', this.checked.toString());
+    });
+  }
+
+  // Restore history sync preference
+  const historySyncCheckbox = document.getElementById('history-sync-enabled');
+  if (historySyncCheckbox) {
+    const savedPreference = localStorage.getItem('history-sync-enabled');
+    if (savedPreference === 'true') {
+      historySyncCheckbox.checked = true;
+    }
+
+    historySyncCheckbox.addEventListener('change', function() {
+      localStorage.setItem('history-sync-enabled', this.checked.toString());
+      // If enabled and signed in, initialize history sync now
+      if (this.checked && msalInstance.getActiveAccount()) {
+        initHistorySync().catch(e => console.error('Failed to init history sync:', e));
+      }
     });
   }
 
