@@ -6,6 +6,7 @@ import { loadWatchLater } from './watch-later.js';
 import { initHistorySync, isHistorySyncEnabled } from './history-sync.js';
 import { initViewportManager } from './ui.js';
 import { getAppStateTodoList, getAppStateTasks, createAppStateTask, updateAppStateTask } from './graph-api.js';
+import { initDebugConsole, toggleDebugConsole, clearDebugLogs } from './debug-console.js';
 
 // Make functions globally available for inline HTML handlers
 window.select_input_vid = select_input_vid;
@@ -13,6 +14,8 @@ window.apply_input_vid_from_button = apply_input_vid_from_button;
 window.clearHistory = clearHistory;
 window.loadWatchLater = loadWatchLater;
 window.dumpAllEvents = dumpAllEvents;
+window.toggleDebugConsole = toggleDebugConsole;
+window.clearDebugLogs = clearDebugLogs;
 
 // Expose Graph API functions for testing
 window.getAppStateTodoList = getAppStateTodoList;
@@ -31,6 +34,9 @@ initViewportManager();
 
 // Initialize on DOM ready
 document.addEventListener('DOMContentLoaded', function() {
+  // Initialize debug console
+  initDebugConsole();
+
   const btn = document.getElementById('msal-login-btn');
   if (btn) {
     btn.onclick = function() {

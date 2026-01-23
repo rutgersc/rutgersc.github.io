@@ -220,6 +220,16 @@
       </div>
     </div>
 
+    <button id="debug-console-toggle" onclick="toggleDebugConsole()" style="position: fixed; bottom: 70px; left: 16px; width: 40px; height: 40px; background: #232323; color: #8ecae6; border: 1px solid #333; border-radius: 50%; font-size: 1.2rem; cursor: pointer; z-index: 10000; box-shadow: 0 2px 8px rgba(0,0,0,0.3);">🐛</button>
+
+    <div id="debug-console-panel" style="display: none; position: fixed; bottom: 120px; left: 16px; right: 16px; max-height: 50vh; background: #0d0d0d; border: 1px solid #333; border-radius: 8px; z-index: 10000; box-shadow: 0 4px 20px rgba(0,0,0,0.5); overflow: hidden;">
+      <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: #1a1a1a; border-bottom: 1px solid #333;">
+        <span style="color: #8ecae6; font-weight: 600; font-size: 0.9rem;">Debug Console</span>
+        <button onclick="clearDebugLogs()" style="background: #232323; color: #ff6b6b; border: 1px solid #333; border-radius: 4px; padding: 4px 10px; font-size: 0.8rem; cursor: pointer;">Clear</button>
+      </div>
+      <div id="debug-console-logs" style="padding: 8px; max-height: calc(50vh - 50px); overflow-y: auto; font-family: monospace;"></div>
+    </div>
+
     <!-- MSAL Library -->
     <script src="https://alcdn.msauth.net/browser/2.38.0/js/msal-browser.min.js"></script>
 
