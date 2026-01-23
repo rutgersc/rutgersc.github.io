@@ -182,7 +182,6 @@ function getPosition(): number {
 }
 
 function updateTimeline(): void {
-  console.log("updating timeline");
   if (!player || !timeline || !timelineTimeSpan || !timelineDragSpan || !timelineApplyBtn || !timelineCancelBtn) return;
   const duration = player.getDuration();
   const current = player.getCurrentTime();
