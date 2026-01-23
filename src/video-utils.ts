@@ -1,18 +1,34 @@
-export function extractYouTubeId(input) {
+export interface VideoData {
+  video_id: string;
+  title: string;
+  author: string;
+  author_id?: string;
+  author_url?: string;
+  timestamp?: number;
+}
+
+export interface VideoProgress {
+  currentTime: number;
+  duration: number;
+  percentage: number;
+}
+
+interface ChannelDetails {
+  author_url: string | null;
+}
+
+export function extractYouTubeId(input: string): string | null {
   try {
-    // If it's already a plain video ID
     if (/^[\w-]{11}$/.test(input)) {
       return input;
     }
 
     const url = new URL(input);
 
-    // Handle full or mobile YouTube URL
     if (
       url.hostname === 'www.youtube.com' ||
       url.hostname === 'm.youtube.com'
     ) {
-      // Handle /live/ URLs (e.g., /live/DmiExfHEJZM)
       const liveMatch = url.pathname.match(/^\/live\/([\w-]{11})/);
       if (liveMatch) {
         return liveMatch[1];
@@ -21,36 +37,33 @@ export function extractYouTubeId(input) {
       return url.searchParams.get('v');
     }
 
-    // Handle youtu.be short URL
     if (url.hostname === 'youtu.be') {
-      return url.pathname.slice(1); // remove leading '/'
+      return url.pathname.slice(1);
     }
 
-  } catch (e) {
+  } catch {
     // input is not a valid URL; fall through
   }
 
-  return null; // couldn't extract ID
+  return null;
 }
 
-export function extractTimestamp(input) {
+export function extractTimestamp(input: string): number | null {
   try {
     const url = new URL(input);
 
-    // Check for 't' parameter in search params (works for all YouTube URLs)
     const tParam = url.searchParams.get('t');
     if (tParam) {
-      // Remove 's' suffix if present (e.g., "1671s" -> "1671")
       return parseInt(tParam.replace(/s$/i, ''));
     }
-  } catch (e) {
+  } catch {
     // input is not a valid URL
   }
 
   return null;
 }
 
-export function formatTime(sec) {
+export function formatTime(sec: number): string {
   sec = Math.floor(sec);
   const h = Math.floor(sec / 3600);
   const m = Math.floor((sec % 3600) / 60);
@@ -62,7 +75,7 @@ export function formatTime(sec) {
   }
 }
 
-export function getTimeAgo(date) {
+export function getTimeAgo(date: Date): string {
   const now = new Date();
   const diffMs = now.getTime() - date.getTime();
   const diffSeconds = Math.floor(diffMs / 1000);
@@ -82,16 +95,16 @@ export function getTimeAgo(date) {
   return `${diffYears} year${diffYears !== 1 ? 's' : ''} ago`;
 }
 
-export async function resolveChannelDetails(videoId) {
+export async function resolveChannelDetails(videoId: string): Promise<ChannelDetails> {
   try {
     const cacheKey = `channelDetails:${videoId}`;
     const cached = localStorage.getItem(cacheKey);
-    if (cached) return JSON.parse(cached);
+    if (cached) return JSON.parse(cached) as ChannelDetails;
     const res = await fetch(`https://noembed.com/embed?url=https://www.youtube.com/watch?v=${videoId}`);
     if (res.ok) {
       const data = await res.json();
       const author_url = data.author_url || null;
-      const result = { author_url };
+      const result: ChannelDetails = { author_url };
       localStorage.setItem(cacheKey, JSON.stringify(result));
       return result;
     }

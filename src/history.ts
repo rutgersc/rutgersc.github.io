@@ -1,24 +1,60 @@
 import { renderVideoItem, renderCompactedSection } from './ui.js';
 import { scheduleSyncToTodo, syncHistoryNow, isHistorySyncReady } from './history-sync.js';
+import type { VideoData, VideoProgress } from './video-utils.js';
 
-export function getHistory() {
-  const history = JSON.parse(localStorage.getItem("history") || "[]");
+export interface HistoryEntry {
+  videoData: VideoData;
+  dateViewed: string;
+  wasWatchLater?: boolean;
+  progress?: VideoProgress;
+}
 
-  // Migrate old format (timestamp) to new format (dateViewed)
+export interface ChannelGroup {
+  author: string;
+  author_url?: string;
+  author_id?: string;
+  videos: Array<{
+    videoData: VideoData;
+    dateViewed: string;
+    wasWatchLater?: boolean;
+  }>;
+}
+
+export interface CompactedHistory {
+  compactedAt: string;
+  channels: ChannelGroup[];
+}
+
+interface LegacyHistoryEntry {
+  videoData: VideoData;
+  timestamp?: string;
+  dateViewed?: string;
+  wasWatchLater?: boolean;
+  progress?: VideoProgress;
+}
+
+export function getHistory(): HistoryEntry[] {
+  const history = JSON.parse(localStorage.getItem("history") || "[]") as LegacyHistoryEntry[];
+
   let needsMigration = false;
-  const migratedHistory = history.map(item => {
+  const migratedHistory: HistoryEntry[] = history.map(item => {
     if (item.timestamp && !item.dateViewed) {
       needsMigration = true;
       return {
         videoData: item.videoData,
         dateViewed: item.timestamp,
-        wasWatchLater: item.wasWatchLater || false
+        wasWatchLater: item.wasWatchLater || false,
+        progress: item.progress
       };
     }
-    return item;
+    return {
+      videoData: item.videoData,
+      dateViewed: item.dateViewed || new Date().toISOString(),
+      wasWatchLater: item.wasWatchLater || false,
+      progress: item.progress
+    };
   });
 
-  // Save migrated data back to localStorage
   if (needsMigration) {
     localStorage.setItem("history", JSON.stringify(migratedHistory));
   }
@@ -26,29 +62,24 @@ export function getHistory() {
   return migratedHistory;
 }
 
-export function addToHistory(videoData, name, wasWatchLater = false, progress = null) {
+export function addToHistory(videoData: VideoData, _name: string, wasWatchLater: boolean = false, progress: VideoProgress | null = null): void {
   const history = getHistory();
 
-  // Check if an existing entry has wasWatchLater = true
   const existingEntry = history.find(
     (item) => item.videoData.video_id === videoData.video_id
   );
-  // Preserve wasWatchLater if it was previously true
   const preservedWasWatchLater = (existingEntry?.wasWatchLater === true) || wasWatchLater;
 
-  // Remove any existing entry with the same video_id
   const filteredHistory = history
     .filter((item) => item.videoData.video_id !== videoData.video_id);
 
-  // Add the new entry to the front with dateViewed and progress
   const dateViewed = new Date().toISOString();
-  const entry = {
+  const entry: HistoryEntry = {
     videoData,
     dateViewed,
     wasWatchLater: preservedWasWatchLater
   };
 
-  // Add progress if available
   if (progress && progress.currentTime !== undefined && progress.duration !== undefined) {
     entry.progress = {
       currentTime: progress.currentTime,
@@ -64,13 +95,12 @@ export function addToHistory(videoData, name, wasWatchLater = false, progress = 
 
   renderHistory();
 
-  // Sync to TODO immediately when adding a new video
   if (isHistorySyncReady()) {
     syncHistoryNow();
   }
 }
 
-export function updateHistoryProgress(videoId, currentTime, duration) {
+export function updateHistoryProgress(videoId: string, currentTime: number, duration: number): void {
   const history = getHistory();
   const entry = history.find(item => item.videoData.video_id === videoId);
 
@@ -81,32 +111,29 @@ export function updateHistoryProgress(videoId, currentTime, duration) {
       percentage: (currentTime / duration) * 100
     };
     localStorage.setItem("history", JSON.stringify(history));
-    // Don't re-render to avoid flickering - progress will be visible on next page load
 
-    // Schedule debounced sync to TODO (every 30s max to avoid API overload)
     if (isHistorySyncReady()) {
       scheduleSyncToTodo();
     }
   }
 }
 
-export function renderHistory() {
+export function renderHistory(): void {
   const history_list = document.getElementById("history_list");
+  if (!history_list) return;
+
   history_list.innerHTML = "";
   const history = getHistory();
   const compacted = getCompactedHistory();
   console.log("renderHistory", history);
 
-  // Render current history items with compact buttons
   history.forEach(({ videoData, dateViewed, wasWatchLater, progress }, index) => {
     const listItem = renderVideoItem(videoData, dateViewed, {
-      onRemove: (videoId) => {
-        // Remove from history
+      onRemove: (videoId: string) => {
         const history = getHistory();
         const filtered = history.filter(item => item.videoData.video_id !== videoId);
         localStorage.setItem("history", JSON.stringify(filtered));
         renderHistory();
-        // Sync removal to TODO
         if (isHistorySyncReady()) {
           syncHistoryNow();
         }
@@ -115,51 +142,43 @@ export function renderHistory() {
       progress: progress || null,
       showCompactButton: true,
       onCompact: () => {
-        // Compact history up to and including this index
         compactHistoryUpTo(index + 1);
       }
     });
     history_list.appendChild(listItem);
   });
 
-  // Render compacted section at the end if it exists
   if (compacted) {
     const compactedSection = renderCompactedSection(compacted);
     history_list.appendChild(compactedSection);
   }
 }
 
-export function clearHistory() {
+export function clearHistory(): void {
   console.log("clearHistory");
   localStorage.removeItem("history");
   localStorage.removeItem("compactedHistory");
   renderHistory();
 
-  // Sync cleared history to TODO
   if (isHistorySyncReady()) {
     syncHistoryNow();
   }
 }
 
-// Get compacted history data
-export function getCompactedHistory() {
-  return JSON.parse(localStorage.getItem("compactedHistory") || "null");
+export function getCompactedHistory(): CompactedHistory | null {
+  return JSON.parse(localStorage.getItem("compactedHistory") || "null") as CompactedHistory | null;
 }
 
-// Set compacted history data
-function setCompactedHistory(compacted) {
+function setCompactedHistory(compacted: CompactedHistory): void {
   localStorage.setItem("compactedHistory", JSON.stringify(compacted));
 }
 
-// Compact history up to and including the specified index
-export function compactHistoryUpTo(index) {
+export function compactHistoryUpTo(index: number): void {
   const history = getHistory();
 
-  // Get events to compact (from index to end of array)
   const eventsToCompact = history.slice(index);
 
-  // Group by channel (author)
-  const channelGroups = {};
+  const channelGroups: Record<string, ChannelGroup> = {};
   eventsToCompact.forEach(event => {
     const channelKey = event.videoData.author_id || event.videoData.author_url || event.videoData.author;
     if (!channelGroups[channelKey]) {
@@ -177,39 +196,31 @@ export function compactHistoryUpTo(index) {
     });
   });
 
-  // Convert to array and sort by number of videos (most watched first)
   const sortedChannels = Object.values(channelGroups).sort((a, b) => b.videos.length - a.videos.length);
 
-  // Create compacted data structure
-  const compacted = {
+  const compacted: CompactedHistory = {
     compactedAt: new Date().toISOString(),
     channels: sortedChannels
   };
 
-  // Save compacted history
   setCompactedHistory(compacted);
 
-  // Remove compacted events from regular history
   const remainingHistory = history.slice(0, index);
   localStorage.setItem("history", JSON.stringify(remainingHistory));
 
-  // Re-render
   renderHistory();
 
-  // Sync to TODO after compaction
   if (isHistorySyncReady()) {
     syncHistoryNow();
   }
 }
 
-// Clear compacted history
-export function clearCompactedHistory() {
+export function clearCompactedHistory(): void {
   localStorage.removeItem("compactedHistory");
   renderHistory();
 }
 
-// Dump all events for debugging
-export function dumpAllEvents() {
+export function dumpAllEvents(): void {
   const history = getHistory();
   const compacted = getCompactedHistory();
 
@@ -217,7 +228,6 @@ export function dumpAllEvents() {
   console.log("Current History:", history);
   console.log("Compacted History:", compacted);
 
-  // Create a readable output
   let output = "=== CURRENT HISTORY ===\n\n";
   history.forEach((event, index) => {
     output += `[${index}] ${event.videoData.author} - ${event.videoData.title}\n`;

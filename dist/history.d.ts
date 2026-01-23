@@ -1,0 +1,10 @@
+import type { HistoryEntry, VideoData, VideoProgress, CompactedHistory } from './types.js';
+export declare function getHistory(): HistoryEntry[];
+export declare function addToHistory(videoData: VideoData, _name: string, wasWatchLater?: boolean, progress?: VideoProgress | null): void;
+export declare function updateHistoryProgress(videoId: string, currentTime: number, duration: number): void;
+export declare function renderHistory(): void;
+export declare function clearHistory(): void;
+export declare function getCompactedHistory(): CompactedHistory | null;
+export declare function compactHistoryUpTo(index: number): void;
+export declare function clearCompactedHistory(): void;
+export declare function dumpAllEvents(): void;

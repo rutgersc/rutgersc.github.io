@@ -1,5 +1,13 @@
+type LogLevel = 'log' | 'warn' | 'error';
+
+interface LogEntry {
+  level: LogLevel;
+  message: string;
+  timestamp: string;
+}
+
 const MAX_LOGS = 200;
-const logs = [];
+const logs: LogEntry[] = [];
 
 const originalConsole = {
   log: console.log.bind(console),
@@ -7,7 +15,7 @@ const originalConsole = {
   error: console.error.bind(console),
 };
 
-const formatArgs = (args) =>
+const formatArgs = (args: unknown[]): string =>
   args.map(arg => {
     if (arg === null) return 'null';
     if (arg === undefined) return 'undefined';
@@ -21,8 +29,8 @@ const formatArgs = (args) =>
     return String(arg);
   }).join(' ');
 
-const addLog = (level, args) => {
-  const entry = {
+const addLog = (level: LogLevel, args: unknown[]): void => {
+  const entry: LogEntry = {
     level,
     message: formatArgs(args),
     timestamp: new Date().toLocaleTimeString(),
@@ -32,36 +40,42 @@ const addLog = (level, args) => {
   renderLogs();
 };
 
-console.log = (...args) => {
+console.log = (...args: unknown[]): void => {
   originalConsole.log(...args);
   addLog('log', args);
 };
 
-console.warn = (...args) => {
+console.warn = (...args: unknown[]): void => {
   originalConsole.warn(...args);
   addLog('warn', args);
 };
 
-console.error = (...args) => {
+console.error = (...args: unknown[]): void => {
   originalConsole.error(...args);
   addLog('error', args);
 };
 
-window.addEventListener('error', (e) => {
+window.addEventListener('error', (e: ErrorEvent) => {
   addLog('error', [`Uncaught: ${e.message} at ${e.filename}:${e.lineno}`]);
 });
 
-window.addEventListener('unhandledrejection', (e) => {
+window.addEventListener('unhandledrejection', (e: PromiseRejectionEvent) => {
   addLog('error', [`Unhandled rejection: ${e.reason}`]);
 });
 
-const levelColors = {
+const levelColors: Record<LogLevel, string> = {
   log: '#6cf06c',
   warn: '#ffd166',
   error: '#ff6b6b',
 };
 
-const renderLogs = () => {
+const escapeHtml = (str: string): string =>
+  str.replace(/&/g, '&amp;')
+     .replace(/</g, '&lt;')
+     .replace(/>/g, '&gt;')
+     .replace(/"/g, '&quot;');
+
+const renderLogs = (): void => {
   const container = document.getElementById('debug-console-logs');
   if (!container) return;
 
@@ -78,18 +92,12 @@ const renderLogs = () => {
     .join('');
 };
 
-const escapeHtml = (str) =>
-  str.replace(/&/g, '&amp;')
-     .replace(/</g, '&lt;')
-     .replace(/>/g, '&gt;')
-     .replace(/"/g, '&quot;');
-
-export const clearDebugLogs = () => {
+export const clearDebugLogs = (): void => {
   logs.length = 0;
   renderLogs();
 };
 
-export const toggleDebugConsole = () => {
+export const toggleDebugConsole = (): void => {
   const panel = document.getElementById('debug-console-panel');
   const btn = document.getElementById('debug-console-toggle');
   if (!panel || !btn) return;
@@ -99,6 +107,6 @@ export const toggleDebugConsole = () => {
   btn.textContent = isVisible ? '🐛' : '✕';
 };
 
-export const initDebugConsole = () => {
+export const initDebugConsole = (): void => {
   renderLogs();
 };

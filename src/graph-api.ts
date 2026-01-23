@@ -1,13 +1,44 @@
 import { msalAcquireGraphToken } from './auth.js';
 
-export async function callGraphApi(endpoint, method = 'GET', body = null) {
+export interface GraphApiResponse<T> {
+  value: T[];
+  '@odata.context'?: string;
+  '@odata.nextLink'?: string;
+}
+
+export interface TodoList {
+  id: string;
+  displayName: string;
+  isOwner?: boolean;
+  isShared?: boolean;
+  wellknownListName?: string;
+}
+
+export interface TodoTask {
+  id: string;
+  title: string;
+  body?: {
+    content: string;
+    contentType: string;
+  };
+  status?: string;
+  importance?: string;
+  createdDateTime?: string;
+  lastModifiedDateTime?: string;
+}
+
+export async function callGraphApi<T = unknown>(
+  endpoint: string,
+  method: string = 'GET',
+  body: unknown = null
+): Promise<T> {
   try {
     const token = await msalAcquireGraphToken();
-    const headers = {
+    const headers: HeadersInit = {
       'Authorization': `Bearer ${token}`,
       'Content-Type': 'application/json'
     };
-    const options = {
+    const options: RequestInit = {
       method,
       headers
     };
@@ -18,20 +49,19 @@ export async function callGraphApi(endpoint, method = 'GET', body = null) {
     if (!response.ok) {
       throw new Error(`Graph API error: ${response.status} ${response.statusText}`);
     }
-    return await response.json();
+    return await response.json() as T;
   } catch (e) {
     console.error('callGraphApi error:', e);
     throw e;
   }
 }
 
-export async function getAppStateTodoList() {
+export async function getAppStateTodoList(): Promise<TodoList> {
   try {
     console.log('Fetching todo lists...');
-    const lists = await callGraphApi('/me/todo/lists');
+    const lists = await callGraphApi<GraphApiResponse<TodoList>>('/me/todo/lists');
     console.log('All todo lists:', lists);
 
-    // Find the "appstate" list
     const appStateList = lists.value.find(list => list.displayName.toLowerCase() === 'appstate');
 
     if (appStateList) {
@@ -39,8 +69,7 @@ export async function getAppStateTodoList() {
       return appStateList;
     } else {
       console.log('appstate list not found, creating it...');
-      // Create the list if it doesn't exist
-      const newList = await callGraphApi('/me/todo/lists', 'POST', {
+      const newList = await callGraphApi<TodoList>('/me/todo/lists', 'POST', {
         displayName: 'appstate'
       });
       console.log('Created appstate list:', newList);
@@ -52,10 +81,10 @@ export async function getAppStateTodoList() {
   }
 }
 
-export async function getAppStateTasks(listId) {
+export async function getAppStateTasks(listId: string): Promise<TodoTask[]> {
   try {
     console.log('Fetching tasks from appstate list...');
-    const tasks = await callGraphApi(`/me/todo/lists/${listId}/tasks`);
+    const tasks = await callGraphApi<GraphApiResponse<TodoTask>>(`/me/todo/lists/${listId}/tasks`);
     console.log('appstate tasks:', tasks);
     return tasks.value;
   } catch (e) {
@@ -64,9 +93,9 @@ export async function getAppStateTasks(listId) {
   }
 }
 
-export async function createAppStateTask(listId, title, body = '') {
+export async function createAppStateTask(listId: string, title: string, body: string = ''): Promise<TodoTask> {
   try {
-    const task = await callGraphApi(`/me/todo/lists/${listId}/tasks`, 'POST', {
+    const task = await callGraphApi<TodoTask>(`/me/todo/lists/${listId}/tasks`, 'POST', {
       title: title,
       body: {
         content: body,
@@ -81,9 +110,9 @@ export async function createAppStateTask(listId, title, body = '') {
   }
 }
 
-export async function updateAppStateTask(listId, taskId, title, body) {
+export async function updateAppStateTask(listId: string, taskId: string, title: string, body: string): Promise<TodoTask> {
   try {
-    const task = await callGraphApi(`/me/todo/lists/${listId}/tasks/${taskId}`, 'PATCH', {
+    const task = await callGraphApi<TodoTask>(`/me/todo/lists/${listId}/tasks/${taskId}`, 'PATCH', {
       title: title,
       body: {
         content: body,

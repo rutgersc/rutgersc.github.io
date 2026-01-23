@@ -1,13 +1,18 @@
-import { callGraphApi, getAppStateTodoList, getAppStateTasks, createAppStateTask } from './graph-api.js';
-import { extractYouTubeId, extractTimestamp } from './video-utils.js';
+import { callGraphApi, getAppStateTodoList, getAppStateTasks, createAppStateTask, TodoTask, GraphApiResponse } from './graph-api.js';
+import { extractYouTubeId, extractTimestamp, VideoData } from './video-utils.js';
 import { renderVideoItem } from './ui.js';
 
-export let watchLaterTaskId = null;
-export let watchLaterListId = null;
-let initWatchLaterPromise = null;
+interface ChecklistItem {
+  id: string;
+  displayName: string;
+  isChecked?: boolean;
+}
 
-export async function initWatchLater() {
-  // Prevent multiple simultaneous initializations
+export let watchLaterTaskId: string | null = null;
+export let watchLaterListId: string | null = null;
+let initWatchLaterPromise: Promise<void> | null = null;
+
+export async function initWatchLater(): Promise<void> {
   if (initWatchLaterPromise) {
     return initWatchLaterPromise;
   }
@@ -30,15 +35,15 @@ export async function initWatchLater() {
       console.log('Task ID:', watchLaterTask.id);
       console.log('Task title:', watchLaterTask.title);
 
-      // Fetch full task details to see if there are steps
-      const fullTask = await callGraphApi(`/me/todo/lists/${watchLaterListId}/tasks/${watchLaterTaskId}`);
+      const fullTask = await callGraphApi<TodoTask>(`/me/todo/lists/${watchLaterListId}/tasks/${watchLaterTaskId}`);
       console.log('Full task details:', fullTask);
 
       await loadWatchLater();
     } catch (e) {
       console.error('initWatchLater error:', e);
-      document.getElementById('watch-later-status').textContent = 'Error loading watch later list';
-      initWatchLaterPromise = null; // Allow retry on error
+      const status = document.getElementById('watch-later-status');
+      if (status) status.textContent = 'Error loading watch later list';
+      initWatchLaterPromise = null;
       throw e;
     }
   })();
@@ -46,11 +51,11 @@ export async function initWatchLater() {
   return initWatchLaterPromise;
 }
 
-async function getWatchLaterChecklistItems() {
+async function getWatchLaterChecklistItems(): Promise<ChecklistItem[]> {
   try {
     console.log('Fetching checklist items from API...');
     console.log('URL:', `/me/todo/lists/${watchLaterListId}/tasks/${watchLaterTaskId}/checklistItems`);
-    const response = await callGraphApi(`/me/todo/lists/${watchLaterListId}/tasks/${watchLaterTaskId}/checklistItems`);
+    const response = await callGraphApi<GraphApiResponse<ChecklistItem>>(`/me/todo/lists/${watchLaterListId}/tasks/${watchLaterTaskId}/checklistItems`);
     console.log('Raw API response:', response);
     console.log('Response.value:', response.value);
     return response.value || [];
@@ -60,18 +65,17 @@ async function getWatchLaterChecklistItems() {
   }
 }
 
-export async function isVideoInWatchLater(videoId) {
+export async function isVideoInWatchLater(videoId: string): Promise<string | null> {
   try {
     if (!watchLaterTaskId) return null;
     const items = await getWatchLaterChecklistItems();
     for (const item of items) {
       try {
-        const videoData = JSON.parse(item.displayName);
+        const videoData = JSON.parse(item.displayName) as VideoData;
         if (videoData.video_id === videoId) {
-          return item.id; // Return the checklist item ID
+          return item.id;
         }
-      } catch (e) {
-        // Try as plain video ID
+      } catch {
         const id = extractYouTubeId(item.displayName) || item.displayName;
         if (id === videoId) {
           return item.id;
@@ -85,13 +89,11 @@ export async function isVideoInWatchLater(videoId) {
   }
 }
 
-export async function removeFromWatchLater(checklistItemId, listItemElement) {
-  // Immediately remove from UI (optimistic update)
-  if (listItemElement && listItemElement.parentNode) {
+export async function removeFromWatchLater(checklistItemId: string, listItemElement: HTMLElement | null): Promise<void> {
+  if (listItemElement?.parentNode) {
     listItemElement.parentNode.removeChild(listItemElement);
   }
 
-  // Check if list is now empty and show status message
   const watchLaterList = document.getElementById('watch_later_list');
   const watchLaterStatus = document.getElementById('watch-later-status');
   if (watchLaterList && watchLaterList.children.length === 0) {
@@ -101,7 +103,6 @@ export async function removeFromWatchLater(checklistItemId, listItemElement) {
     }
   }
 
-  // Then make the API call
   try {
     await callGraphApi(
       `/me/todo/lists/${watchLaterListId}/tasks/${watchLaterTaskId}/checklistItems/${checklistItemId}`,
@@ -110,13 +111,25 @@ export async function removeFromWatchLater(checklistItemId, listItemElement) {
     console.log('Removed from watch later:', checklistItemId);
   } catch (e) {
     console.error('removeFromWatchLater error:', e);
-    // TODO: Could re-add the item to the list if the API call fails
   }
 }
 
-export async function loadWatchLater() {
+interface VideoDataItem {
+  videoData: VideoData;
+  checklistItemId: string;
+  originalUrl: string | null;
+}
+
+interface ListItemEntry {
+  element: HTMLLIElement;
+  videoData: VideoData;
+}
+
+export async function loadWatchLater(): Promise<void> {
   const watchLaterList = document.getElementById('watch_later_list');
   const watchLaterStatus = document.getElementById('watch-later-status');
+
+  if (!watchLaterList || !watchLaterStatus) return;
 
   console.log('=== Load Watch Later Debug ===');
   console.log('watchLaterListId:', watchLaterListId);
@@ -146,17 +159,14 @@ export async function loadWatchLater() {
       return;
     }
 
-    // Step 1: Map items to videoData objects
-    const videoDataList = items.map(item => {
+    const videoDataList: VideoDataItem[] = items.map(item => {
       try {
-        // Try to parse as JSON (new format with embedded metadata)
-        const videoData = JSON.parse(item.displayName);
+        const videoData = JSON.parse(item.displayName) as VideoData;
         if (!videoData.video_id) {
           throw new Error('No video_id in parsed data');
         }
         return { videoData, checklistItemId: item.id, originalUrl: null };
-      } catch (e) {
-        // Fallback: treat displayName as plain video ID or URL (old format)
+      } catch {
         const videoId = extractYouTubeId(item.displayName) || item.displayName;
         const timestamp = extractTimestamp(item.displayName);
         return {
@@ -164,37 +174,32 @@ export async function loadWatchLater() {
             video_id: videoId,
             title: 'Loading...',
             author: 'Loading...',
-            author_url: null,
-            timestamp: timestamp // Store timestamp in videoData
+            author_url: undefined,
+            timestamp: timestamp ?? undefined
           },
           checklistItemId: item.id,
-          originalUrl: item.displayName // Keep original URL for playing with timestamp
+          originalUrl: item.displayName
         };
       }
     });
 
-    // Step 2: Map videoData to list items
-    const listItems = videoDataList.map(({ videoData, checklistItemId, originalUrl }) => {
+    const listItems: ListItemEntry[] = videoDataList.map(({ videoData, checklistItemId, originalUrl }) => {
       const element = renderVideoItem(videoData, null, {
-        onRemove: (vid) => removeFromWatchLater(checklistItemId, element),
-        // No onPlay needed - apply_vid will handle removal from watch later
-        playUrl: originalUrl // Pass the original URL with timestamp if available
+        onRemove: () => removeFromWatchLater(checklistItemId, element),
+        playUrl: originalUrl
       });
       return { element, videoData };
     });
 
-    // Step 3: Append all list items
     listItems.forEach(({ element }) => {
       watchLaterList.appendChild(element);
     });
 
-    // Step 4: Filter items with missing metadata and fetch in parallel
     const itemsNeedingMetadata = listItems.filter(({ videoData }) =>
       !videoData.title || videoData.title === 'Loading...'
     );
 
     if (itemsNeedingMetadata.length > 0) {
-      // Fetch all missing metadata in parallel
       Promise.all(
         itemsNeedingMetadata.map(async ({ element, videoData }) => {
           const videoId = videoData.video_id;
@@ -216,9 +221,9 @@ export async function loadWatchLater() {
             }
 
             if (metadata) {
-              const data = JSON.parse(metadata);
-              const titleEl = element.querySelector('span[style*="font-weight: 500"]');
-              const authorEl = element.querySelector('a[style*="font-weight: bold"]');
+              const data = JSON.parse(metadata) as { title?: string; author?: string; author_url?: string };
+              const titleEl = element.querySelector('span[style*="font-weight: 500"]') as HTMLElement | null;
+              const authorEl = element.querySelector('a[style*="font-weight: bold"]') as HTMLAnchorElement | null;
               if (titleEl) titleEl.textContent = data.title || 'Unknown title';
               if (authorEl) {
                 authorEl.textContent = data.author || 'Unknown author';

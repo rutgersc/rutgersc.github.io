@@ -1,38 +1,31 @@
-import { getAppStateTodoList, getAppStateTasks, createAppStateTask, updateAppStateTask } from './graph-api.js';
-import { getHistory } from './history.js';
+import { getAppStateTodoList, getAppStateTasks, createAppStateTask, updateAppStateTask, callGraphApi, TodoTask } from './graph-api.js';
+import { getHistory, HistoryEntry } from './history.js';
 import { msalInstance } from './auth.js';
 
-// Task state
-export let historyTaskId = null;
-export let historyListId = null;
-let initHistoryPromise = null;
+export let historyTaskId: string | null = null;
+export let historyListId: string | null = null;
+let initHistoryPromise: Promise<void> | null = null;
 
-// Debounce state
-let syncTimeout = null;
+let syncTimeout: ReturnType<typeof setTimeout> | null = null;
 let pendingSync = false;
-const SYNC_DEBOUNCE_MS = 30000; // 30 seconds
+const SYNC_DEBOUNCE_MS = 30000;
 
-// Check if history sync is enabled in settings
-export function isHistorySyncEnabled() {
+export function isHistorySyncEnabled(): boolean {
   return localStorage.getItem('history-sync-enabled') === 'true';
 }
 
-// Initialize history task in TODO
-export async function initHistorySync() {
-  // Check if history sync is enabled
+export async function initHistorySync(): Promise<void> {
   if (!isHistorySyncEnabled()) {
     console.log('History sync disabled in settings, skipping init');
     return;
   }
 
-  // Prevent race conditions - return existing promise if initialization in progress
   if (initHistoryPromise) {
     return initHistoryPromise;
   }
 
   initHistoryPromise = (async () => {
     try {
-      // Check if user is signed in
       const account = msalInstance.getActiveAccount();
       if (!account) {
         console.log('Not signed in, skipping history sync init');
@@ -43,18 +36,15 @@ export async function initHistorySync() {
       const appStateList = await getAppStateTodoList();
       historyListId = appStateList.id;
 
-      // Find or create the youtube-history task
       const tasks = await getAppStateTasks(historyListId);
       let historyTask = tasks.find(task => task.title === 'youtube-history');
 
       if (historyTask) {
         console.log('Found existing youtube-history task:', historyTask.id);
         historyTaskId = historyTask.id;
-        // Load history from TODO and merge with local
         await loadHistoryFromTodo();
       } else {
         console.log('Creating youtube-history task...');
-        // Create with current local history as initial content
         const history = getHistory();
         const body = historyToBody(history);
         historyTask = await createAppStateTask(historyListId, 'youtube-history', body);
@@ -63,7 +53,6 @@ export async function initHistorySync() {
       }
     } catch (e) {
       console.error('initHistorySync error:', e);
-      // Reset promise so retry is possible
       initHistoryPromise = null;
       throw e;
     }
@@ -72,24 +61,20 @@ export async function initHistorySync() {
   return initHistoryPromise;
 }
 
-// Convert history array to task body format (JSON lines)
-function historyToBody(history) {
-  // Each line is a JSON object representing one history entry
-  // Limit to most recent 200 entries to stay within TODO size limits
+function historyToBody(history: HistoryEntry[]): string {
   const limitedHistory = history.slice(0, 200);
   return limitedHistory.map(entry => JSON.stringify(entry)).join('\n');
 }
 
-// Parse task body back to history array
-function bodyToHistory(body) {
+function bodyToHistory(body: string): HistoryEntry[] {
   if (!body || body.trim() === '') {
     return [];
   }
   const lines = body.split('\n').filter(line => line.trim() !== '');
-  const history = [];
+  const history: HistoryEntry[] = [];
   for (const line of lines) {
     try {
-      history.push(JSON.parse(line));
+      history.push(JSON.parse(line) as HistoryEntry);
     } catch (e) {
       console.warn('Failed to parse history line:', line, e);
     }
@@ -97,12 +82,9 @@ function bodyToHistory(body) {
   return history;
 }
 
-// Load history from TODO and merge with local storage
-async function loadHistoryFromTodo() {
+async function loadHistoryFromTodo(): Promise<void> {
   try {
-    // Fetch the task with body content
-    const { callGraphApi } = await import('./graph-api.js');
-    const task = await callGraphApi(`/me/todo/lists/${historyListId}/tasks/${historyTaskId}`);
+    const task = await callGraphApi<TodoTask>(`/me/todo/lists/${historyListId}/tasks/${historyTaskId}`);
 
     const todoHistory = bodyToHistory(task.body?.content || '');
     const localHistory = getHistory();
@@ -110,14 +92,11 @@ async function loadHistoryFromTodo() {
     console.log('TODO history entries:', todoHistory.length);
     console.log('Local history entries:', localHistory.length);
 
-    // Merge: combine both, dedupe by video_id, sort by dateViewed (newest first)
     const merged = mergeHistories(localHistory, todoHistory);
 
-    // Save merged history to localStorage
     localStorage.setItem('history', JSON.stringify(merged));
     console.log('Merged history entries:', merged.length);
 
-    // Re-render history UI with merged data (dynamic import to avoid circular dep)
     const { renderHistory } = await import('./history.js');
     renderHistory();
   } catch (e) {
@@ -125,11 +104,9 @@ async function loadHistoryFromTodo() {
   }
 }
 
-// Merge two history arrays, keeping most recent entry per video
-function mergeHistories(local, remote) {
-  const byVideoId = new Map();
+function mergeHistories(local: HistoryEntry[], remote: HistoryEntry[]): HistoryEntry[] {
+  const byVideoId = new Map<string, HistoryEntry>();
 
-  // Process all entries, keeping the one with latest dateViewed per video
   for (const entry of [...local, ...remote]) {
     const videoId = entry.videoData?.video_id;
     if (!videoId) continue;
@@ -138,13 +115,11 @@ function mergeHistories(local, remote) {
     if (!existing) {
       byVideoId.set(videoId, entry);
     } else {
-      // Keep the one with the later dateViewed
       const existingDate = new Date(existing.dateViewed);
       const entryDate = new Date(entry.dateViewed);
       if (entryDate > existingDate) {
         byVideoId.set(videoId, entry);
       } else if (entryDate.getTime() === existingDate.getTime()) {
-        // Same date, merge progress (keep better progress data)
         if (entry.progress && (!existing.progress || entry.progress.currentTime > existing.progress.currentTime)) {
           byVideoId.set(videoId, { ...existing, progress: entry.progress });
         }
@@ -152,14 +127,12 @@ function mergeHistories(local, remote) {
     }
   }
 
-  // Sort by dateViewed descending (newest first)
   return Array.from(byVideoId.values()).sort((a, b) => {
-    return new Date(b.dateViewed) - new Date(a.dateViewed);
+    return new Date(b.dateViewed).getTime() - new Date(a.dateViewed).getTime();
   });
 }
 
-// Sync history to TODO (debounced)
-export function scheduleSyncToTodo() {
+export function scheduleSyncToTodo(): void {
   if (!isHistorySyncEnabled()) {
     return;
   }
@@ -170,12 +143,10 @@ export function scheduleSyncToTodo() {
 
   pendingSync = true;
 
-  // Clear existing timeout
   if (syncTimeout) {
     clearTimeout(syncTimeout);
   }
 
-  // Schedule sync after debounce period
   syncTimeout = setTimeout(() => {
     if (pendingSync) {
       syncHistoryToTodo();
@@ -185,8 +156,7 @@ export function scheduleSyncToTodo() {
   console.log(`History sync scheduled in ${SYNC_DEBOUNCE_MS / 1000}s`);
 }
 
-// Sync history to TODO immediately
-export async function syncHistoryToTodo() {
+export async function syncHistoryToTodo(): Promise<void> {
   if (!isHistorySyncEnabled()) {
     return;
   }
@@ -210,14 +180,12 @@ export async function syncHistoryToTodo() {
     console.log('History synced to TODO successfully');
   } catch (e) {
     console.error('syncHistoryToTodo error:', e);
-    // Schedule retry
     pendingSync = true;
     syncTimeout = setTimeout(() => syncHistoryToTodo(), SYNC_DEBOUNCE_MS);
   }
 }
 
-// Force sync immediately (useful when adding new video to history)
-export function syncHistoryNow() {
+export function syncHistoryNow(): void {
   if (!isHistorySyncEnabled()) {
     return;
   }
@@ -226,7 +194,6 @@ export function syncHistoryNow() {
     return;
   }
 
-  // If there's a pending debounced sync, execute it now
   if (syncTimeout) {
     clearTimeout(syncTimeout);
     syncTimeout = null;
@@ -235,7 +202,6 @@ export function syncHistoryNow() {
   syncHistoryToTodo();
 }
 
-// Check if history sync is ready
-export function isHistorySyncReady() {
+export function isHistorySyncReady(): boolean {
   return historyTaskId !== null && historyListId !== null;
 }

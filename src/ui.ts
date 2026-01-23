@@ -1,17 +1,31 @@
 import { getTimeAgo, formatTime } from './video-utils.js';
 import { apply_input_vid } from './youtube-player.js';
+import type { VideoData, VideoProgress } from './video-utils.js';
+import type { CompactedHistory } from './history.js';
 
-export function renderVideoItem(videoData, dateViewed, options = {}) {
+export interface RenderOptions {
+  onRemove?: ((videoId: string) => void) | null;
+  removeButtonText?: string;
+  removeButtonTitle?: string;
+  onPlay?: ((videoId: string) => void) | null;
+  wasWatchLater?: boolean;
+  playUrl?: string | null;
+  onCompact?: (() => void) | null;
+  showCompactButton?: boolean;
+  progress?: VideoProgress | null;
+}
+
+export function renderVideoItem(videoData: VideoData, dateViewed: string | null, options: RenderOptions = {}): HTMLLIElement {
   const {
     onRemove = null,
     removeButtonText = '🗑️',
     removeButtonTitle = 'Remove',
     onPlay = null,
     wasWatchLater = false,
-    playUrl = null, // URL with timestamp to play
-    onCompact = null, // Callback for compacting history up to this point
-    showCompactButton = false, // Whether to show the compact button
-    progress = null // Progress object with currentTime, duration, percentage
+    playUrl = null,
+    onCompact = null,
+    showCompactButton = false,
+    progress = null
   } = options;
 
   const listItem = document.createElement("li");
@@ -25,10 +39,8 @@ export function renderVideoItem(videoData, dateViewed, options = {}) {
   listItem.style.flexDirection = "column";
   listItem.style.alignItems = "flex-start";
   listItem.style.gap = "4px";
-  // Use golden color border if video was from watch later
   listItem.style.border = wasWatchLater ? "1px solid #ffd166" : "1px solid #333";
 
-  // Top row: author, id (clickable), play button
   const topRow = document.createElement("div");
   topRow.style.display = "flex";
   topRow.style.alignItems = "center";
@@ -44,13 +56,11 @@ export function renderVideoItem(videoData, dateViewed, options = {}) {
   authorP.style.textDecoration = "none";
   authorP.title = "Visit channel";
 
-  // Set the href based on available data
   if (videoData.author_url) {
     authorP.href = videoData.author_url;
   } else if (videoData.author_id) {
     authorP.href = `https://www.youtube.com/channel/${videoData.author_id}`;
   } else {
-    // Fallback: search for the channel
     authorP.href = `https://www.youtube.com/results?search_query=${encodeURIComponent(videoData.author)}`;
   }
 
@@ -66,7 +76,6 @@ export function renderVideoItem(videoData, dateViewed, options = {}) {
     authorP.style.color = "#8ecae6";
   };
 
-  // id (clickable to open video)
   const idP = document.createElement("a");
   idP.textContent = videoData.video_id;
   idP.style.fontSize = "0.85rem";
@@ -76,7 +85,6 @@ export function renderVideoItem(videoData, dateViewed, options = {}) {
   idP.style.cursor = "pointer";
   idP.style.textDecoration = "none";
   idP.title = "Open video in new tab";
-  // Include timestamp in URL if available
   const timestampParam = videoData.timestamp ? `&t=${videoData.timestamp}` : '';
   idP.href = `https://www.youtube.com/watch?v=${videoData.video_id}${timestampParam}`;
   idP.target = "_blank";
@@ -91,7 +99,6 @@ export function renderVideoItem(videoData, dateViewed, options = {}) {
     idP.style.color = "#bdbdbd";
   };
 
-  // Add video timestamp indicator if available
   const videoTimestampSpan = document.createElement("span");
   if (videoData.timestamp) {
     videoTimestampSpan.textContent = `@${formatTime(videoData.timestamp)}`;
@@ -102,7 +109,6 @@ export function renderVideoItem(videoData, dateViewed, options = {}) {
     videoTimestampSpan.title = `Video will start at ${formatTime(videoData.timestamp)}`;
   }
 
-  // Add dateViewed if available
   const dateViewedSpan = document.createElement("span");
   if (dateViewed) {
     const date = new Date(dateViewed);
@@ -131,12 +137,10 @@ export function renderVideoItem(videoData, dateViewed, options = {}) {
     if (onPlay) {
       onPlay(videoData.video_id);
     }
-    // Use playUrl if provided (for watch later items with timestamps), otherwise use video_id
     apply_input_vid(playUrl || videoData.video_id);
   };
 
-  // Remove button (if onRemove callback provided)
-  let removeButton = null;
+  let removeButton: HTMLButtonElement | null = null;
   if (onRemove) {
     removeButton = document.createElement("button");
     removeButton.textContent = removeButtonText;
@@ -149,13 +153,13 @@ export function renderVideoItem(videoData, dateViewed, options = {}) {
     removeButton.style.cursor = "pointer";
     removeButton.style.fontSize = "1.1em";
     removeButton.style.marginLeft = "8px";
-    removeButton.onmouseenter = () => removeButton.style.background = "#a00000";
-    removeButton.onmouseleave = () => removeButton.style.background = "#8b0000";
+    const btn = removeButton;
+    removeButton.onmouseenter = () => btn.style.background = "#a00000";
+    removeButton.onmouseleave = () => btn.style.background = "#8b0000";
     removeButton.onclick = () => onRemove(videoData.video_id);
   }
 
-  // Compact button (if showCompactButton is true)
-  let compactButton = null;
+  let compactButton: HTMLButtonElement | null = null;
   if (showCompactButton && onCompact) {
     compactButton = document.createElement("button");
     compactButton.textContent = "📦";
@@ -168,12 +172,12 @@ export function renderVideoItem(videoData, dateViewed, options = {}) {
     compactButton.style.cursor = "pointer";
     compactButton.style.fontSize = "1.1em";
     compactButton.style.marginLeft = "8px";
-    compactButton.onmouseenter = () => compactButton.style.background = "#5a6678";
-    compactButton.onmouseleave = () => compactButton.style.background = "#4a5568";
+    const btn = compactButton;
+    compactButton.onmouseenter = () => btn.style.background = "#5a6678";
+    compactButton.onmouseleave = () => btn.style.background = "#4a5568";
     compactButton.onclick = () => onCompact();
   }
 
-  // Expand/Collapse button
   const expandBtn = document.createElement("button");
   expandBtn.textContent = "▾";
   expandBtn.title = "Expand channel videos";
@@ -188,7 +192,6 @@ export function renderVideoItem(videoData, dateViewed, options = {}) {
   expandBtn.onmouseenter = () => expandBtn.style.background = "#4a4a4a";
   expandBtn.onmouseleave = () => expandBtn.style.background = "#3a3a3a";
 
-  // Assemble top row
   const leftGroup = document.createElement("span");
   leftGroup.style.display = "flex";
   leftGroup.style.alignItems = "center";
@@ -209,7 +212,6 @@ export function renderVideoItem(videoData, dateViewed, options = {}) {
   rightGroup.appendChild(expandBtn);
   topRow.appendChild(rightGroup);
 
-  // Title row
   const titleP = document.createElement("span");
   titleP.textContent = videoData.title;
   titleP.style.fontSize = "1.05rem";
@@ -219,15 +221,13 @@ export function renderVideoItem(videoData, dateViewed, options = {}) {
   titleP.style.marginBottom = "2px";
   titleP.style.wordBreak = "break-word";
 
-  // Progress bar (if progress is available)
-  let progressBar = null;
+  let progressBar: HTMLDivElement | null = null;
   if (progress && progress.percentage !== undefined) {
     progressBar = document.createElement("div");
     progressBar.style.width = "100%";
     progressBar.style.marginTop = "6px";
     progressBar.style.marginBottom = "4px";
 
-    // Progress bar container
     const progressBarContainer = document.createElement("div");
     progressBarContainer.style.width = "100%";
     progressBarContainer.style.height = "8px";
@@ -236,7 +236,6 @@ export function renderVideoItem(videoData, dateViewed, options = {}) {
     progressBarContainer.style.overflow = "hidden";
     progressBarContainer.style.border = "1px solid #333";
 
-    // Progress bar fill
     const progressBarFill = document.createElement("div");
     progressBarFill.style.width = `${Math.min(progress.percentage, 100)}%`;
     progressBarFill.style.height = "100%";
@@ -245,7 +244,6 @@ export function renderVideoItem(videoData, dateViewed, options = {}) {
 
     progressBarContainer.appendChild(progressBarFill);
 
-    // Progress text
     const progressText = document.createElement("div");
     progressText.style.fontSize = "0.75rem";
     progressText.style.color = "#aaa";
@@ -256,7 +254,6 @@ export function renderVideoItem(videoData, dateViewed, options = {}) {
     progressBar.appendChild(progressText);
   }
 
-  // Expandable container for latest videos
   const expandContainer = document.createElement("div");
   expandContainer.style.display = "none";
   expandContainer.style.width = "100%";
@@ -273,7 +270,7 @@ export function renderVideoItem(videoData, dateViewed, options = {}) {
   expandStatus.textContent = "Loading...";
   expandContainer.appendChild(expandStatus);
 
-  async function toggleExpand() {
+  function toggleExpand(): void {
     const isOpen = expandContainer.style.display !== "none";
     if (isOpen) {
       expandContainer.style.display = "none";
@@ -282,17 +279,13 @@ export function renderVideoItem(videoData, dateViewed, options = {}) {
       return;
     }
     expandContainer.style.display = "block";
-    // Placeholder UI only; fetching disabled for now
     expandStatus.textContent = "Channel videos placeholder (fetching disabled).";
     expandBtn.textContent = "▴";
     expandBtn.title = "Collapse";
-    // Intentionally do not fetch latest videos; keep placeholder visible
-    return;
   }
 
   expandBtn.onclick = toggleExpand;
 
-  // Assemble
   listItem.appendChild(topRow);
   listItem.appendChild(titleP);
   if (progressBar) {
@@ -303,8 +296,7 @@ export function renderVideoItem(videoData, dateViewed, options = {}) {
   return listItem;
 }
 
-// Render compacted history section with collapsible channels
-export function renderCompactedSection(compacted) {
+export function renderCompactedSection(compacted: CompactedHistory): HTMLDivElement {
   const section = document.createElement("div");
   section.style.background = "#1a1a1a";
   section.style.borderRadius = "8px";
@@ -314,7 +306,6 @@ export function renderCompactedSection(compacted) {
   section.style.boxShadow = "0 2px 8px rgba(0,0,0,0.12)";
   section.style.border = "2px solid #4a5568";
 
-  // Header
   const header = document.createElement("div");
   header.style.display = "flex";
   header.style.justifyContent = "space-between";
@@ -337,7 +328,6 @@ export function renderCompactedSection(compacted) {
   header.appendChild(compactedDate);
   section.appendChild(header);
 
-  // Render each channel
   compacted.channels.forEach(channel => {
     const channelItem = document.createElement("div");
     channelItem.style.marginBottom = "12px";
@@ -346,7 +336,6 @@ export function renderCompactedSection(compacted) {
     channelItem.style.padding = "10px";
     channelItem.style.border = "1px solid #333";
 
-    // Channel header (collapsible)
     const channelHeader = document.createElement("div");
     channelHeader.style.display = "flex";
     channelHeader.style.justifyContent = "space-between";
@@ -360,7 +349,6 @@ export function renderCompactedSection(compacted) {
     channelName.style.fontSize = "1rem";
     channelName.style.textDecoration = "none";
 
-    // Set channel link
     if (channel.author_url) {
       channelName.href = channel.author_url;
     } else if (channel.author_id) {
@@ -400,14 +388,12 @@ export function renderCompactedSection(compacted) {
     channelHeader.appendChild(leftSide);
     channelHeader.appendChild(toggleIcon);
 
-    // Videos container (initially hidden)
     const videosContainer = document.createElement("div");
     videosContainer.style.display = "none";
     videosContainer.style.marginTop = "10px";
     videosContainer.style.paddingTop = "10px";
     videosContainer.style.borderTop = "1px solid #333";
 
-    // Render each video as a compact 1-liner
     channel.videos.forEach(video => {
       const videoLine = document.createElement("div");
       videoLine.style.display = "flex";
@@ -461,9 +447,7 @@ export function renderCompactedSection(compacted) {
       videosContainer.appendChild(videoLine);
     });
 
-    // Toggle collapse/expand
-    channelHeader.onclick = (e) => {
-      // Don't toggle if clicking the channel link
+    channelHeader.onclick = (e: MouseEvent) => {
       if (e.target === channelName) return;
 
       const isHidden = videosContainer.style.display === "none";
@@ -479,17 +463,21 @@ export function renderCompactedSection(compacted) {
   return section;
 }
 
-// Viewport management
-export function initViewportManager() {
-  const switchWidthBtn = document.getElementById("switch-width-btn");
-  const ytplayer = document.getElementById("ytplayer");
-  const timeline = document.getElementById("timeline");
-  const timelineTime = document.getElementById("timeline-time");
+export function initViewportManager(): void {
+  const switchWidthBtn = document.getElementById("switch-width-btn") as HTMLButtonElement | null;
+  const ytplayer = document.getElementById("ytplayer") as HTMLElement | null;
+  const timeline = document.getElementById("timeline") as HTMLInputElement | null;
+  const timelineTime = document.getElementById("timeline-time") as HTMLElement | null;
+
+  if (!switchWidthBtn || !ytplayer || !timeline || !timelineTime) return;
+
   let isFullWidth = true;
 
-  const handleViewportChange = () => setFullWidth(false);
+  const handleViewportChange = (): void => setFullWidth(false);
 
-  function setFullWidth(full) {
+  function setFullWidth(full: boolean): void {
+    if (!ytplayer || !timeline || !timelineTime || !switchWidthBtn) return;
+
     if (full) {
       ytplayer.style.width = "100%";
       timeline.style.width = "100%";
@@ -506,15 +494,12 @@ export function initViewportManager() {
       timelineTime.style.width = "";
       switchWidthBtn.textContent = "Viewport";
     } else {
-      // Use viewport dimensions and position, accounting for zoom and scroll
-      const viewportWidth = window.visualViewport.width;
-      const viewportLeft = window.visualViewport.offsetLeft;
+      const viewportWidth = window.visualViewport?.width ?? window.innerWidth;
+      const viewportLeft = window.visualViewport?.offsetLeft ?? 0;
 
-      // Set width to viewport width
       ytplayer.style.width = viewportWidth + "px";
       timeline.style.width = viewportWidth + "px";
 
-      // Position elements to be centered in the current viewport
       ytplayer.style.position = "relative";
       ytplayer.style.left = viewportLeft + "px";
       ytplayer.style.margin = "0";
@@ -532,19 +517,18 @@ export function initViewportManager() {
     isFullWidth = full;
   }
 
-  switchWidthBtn.onclick = function() {
+  switchWidthBtn.onclick = function(): void {
     const newFullWidth = !isFullWidth;
     setFullWidth(newFullWidth);
 
     if (newFullWidth) {
-      window.visualViewport.removeEventListener("resize", handleViewportChange);
-      window.visualViewport.removeEventListener("scroll", handleViewportChange);
+      window.visualViewport?.removeEventListener("resize", handleViewportChange);
+      window.visualViewport?.removeEventListener("scroll", handleViewportChange);
     } else {
-      window.visualViewport.addEventListener("resize", handleViewportChange);
-      window.visualViewport.addEventListener("scroll", handleViewportChange);
+      window.visualViewport?.addEventListener("resize", handleViewportChange);
+      window.visualViewport?.addEventListener("scroll", handleViewportChange);
     }
   };
 
-  // Set initial state
   setFullWidth(true);
 }
