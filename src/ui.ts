@@ -1,6 +1,6 @@
-import { getTimeAgo, formatTime } from './video-utils.js';
+import { getTimeAgo, formatTime, fetchChannelVideos } from './video-utils.js';
 import { apply_input_vid } from './youtube-player.js';
-import type { VideoData, VideoProgress } from './video-utils.js';
+import type { VideoData, VideoProgress, ChannelVideo } from './video-utils.js';
 import type { CompactedHistory } from './history.js';
 
 export interface RenderOptions {
@@ -270,7 +270,9 @@ export function renderVideoItem(videoData: VideoData, dateViewed: string | null,
   expandStatus.textContent = "Loading...";
   expandContainer.appendChild(expandStatus);
 
-  function toggleExpand(): void {
+  let channelVideosFetched = false;
+
+  async function toggleExpand(): Promise<void> {
     const isOpen = expandContainer.style.display !== "none";
     if (isOpen) {
       expandContainer.style.display = "none";
@@ -278,10 +280,85 @@ export function renderVideoItem(videoData: VideoData, dateViewed: string | null,
       expandBtn.title = "Expand channel videos";
       return;
     }
+
     expandContainer.style.display = "block";
-    expandStatus.textContent = "Channel videos placeholder (fetching disabled).";
     expandBtn.textContent = "▴";
     expandBtn.title = "Collapse";
+
+    if (channelVideosFetched) return;
+
+    expandStatus.textContent = "Loading channel videos...";
+
+    try {
+      const videos = await fetchChannelVideos(videoData.author_url, videoData.author_id, 10);
+
+      if (videos.length === 0) {
+        expandStatus.textContent = "No videos found for this channel.";
+        channelVideosFetched = true;
+        return;
+      }
+
+      expandStatus.style.display = "none";
+      channelVideosFetched = true;
+
+      const renderChannelVideoItem = (video: ChannelVideo): HTMLDivElement => {
+        const item = document.createElement("div");
+        item.style.display = "flex";
+        item.style.alignItems = "center";
+        item.style.justifyContent = "space-between";
+        item.style.padding = "6px 0";
+        item.style.borderBottom = "1px solid #333";
+
+        const info = document.createElement("div");
+        info.style.flex = "1";
+        info.style.minWidth = "0";
+        info.style.marginRight = "10px";
+
+        const title = document.createElement("div");
+        title.textContent = video.title;
+        title.style.color = "#fff";
+        title.style.fontSize = "0.85rem";
+        title.style.whiteSpace = "nowrap";
+        title.style.overflow = "hidden";
+        title.style.textOverflow = "ellipsis";
+        title.style.marginBottom = "2px";
+        title.title = video.title;
+
+        const date = document.createElement("div");
+        date.textContent = video.published ? getTimeAgo(new Date(video.published)) : "";
+        date.style.color = "#888";
+        date.style.fontSize = "0.75rem";
+
+        info.appendChild(title);
+        info.appendChild(date);
+
+        const playBtn = document.createElement("button");
+        playBtn.textContent = "▶️";
+        playBtn.title = "Play";
+        playBtn.style.background = "#2d6a4f";
+        playBtn.style.color = "#fff";
+        playBtn.style.border = "none";
+        playBtn.style.borderRadius = "4px";
+        playBtn.style.padding = "4px 8px";
+        playBtn.style.cursor = "pointer";
+        playBtn.style.fontSize = "0.9em";
+        playBtn.style.flexShrink = "0";
+        playBtn.onmouseenter = () => playBtn.style.background = "#40916c";
+        playBtn.onmouseleave = () => playBtn.style.background = "#2d6a4f";
+        playBtn.onclick = () => apply_input_vid(video.videoId);
+
+        item.appendChild(info);
+        item.appendChild(playBtn);
+        return item;
+      };
+
+      videos.forEach(video => expandContainer.appendChild(renderChannelVideoItem(video)));
+
+    } catch (e) {
+      console.warn("Failed to fetch channel videos", e);
+      expandStatus.textContent = "Failed to load channel videos.";
+      channelVideosFetched = true;
+    }
   }
 
   expandBtn.onclick = toggleExpand;

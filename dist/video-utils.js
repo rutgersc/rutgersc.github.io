@@ -90,3 +90,54 @@ export async function resolveChannelDetails(videoId) {
     }
     return { author_url: null };
 }
+function extractChannelId(authorUrl, authorId) {
+    if (authorId)
+        return authorId;
+    if (!authorUrl)
+        return null;
+    const channelMatch = authorUrl.match(/\/channel\/(UC[\w-]+)/);
+    if (channelMatch)
+        return channelMatch[1];
+    const userMatch = authorUrl.match(/\/@([\w-]+)/);
+    if (userMatch)
+        return `@${userMatch[1]}`;
+    return null;
+}
+export async function fetchChannelVideos(authorUrl, authorId, limit = 10) {
+    const channelId = extractChannelId(authorUrl, authorId);
+    if (!channelId)
+        return [];
+    const cacheKey = `channelVideos:${channelId}`;
+    const cacheExpiry = 30 * 60 * 1000; // 30 minutes
+    const cached = localStorage.getItem(cacheKey);
+    if (cached) {
+        const { videos, timestamp } = JSON.parse(cached);
+        if (Date.now() - timestamp < cacheExpiry) {
+            return videos.slice(0, limit);
+        }
+    }
+    const isHandle = channelId.startsWith('@');
+    const feedUrl = isHandle
+        ? `https://www.youtube.com/feeds/videos.xml?user=${channelId.slice(1)}`
+        : `https://www.youtube.com/feeds/videos.xml?channel_id=${channelId}`;
+    const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(feedUrl)}`;
+    const res = await fetch(proxyUrl);
+    if (!res.ok)
+        throw new Error(`Failed to fetch channel feed: ${res.status}`);
+    const xml = await res.text();
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(xml, 'application/xml');
+    const entries = doc.querySelectorAll('entry');
+    const videos = Array.from(entries).map(entry => {
+        const videoIdEl = entry.querySelector('yt\\:videoId, videoId');
+        const titleEl = entry.querySelector('title');
+        const publishedEl = entry.querySelector('published');
+        return {
+            videoId: videoIdEl?.textContent ?? '',
+            title: titleEl?.textContent ?? 'Unknown',
+            published: publishedEl?.textContent ?? ''
+        };
+    }).filter(v => v.videoId);
+    localStorage.setItem(cacheKey, JSON.stringify({ videos, timestamp: Date.now() }));
+    return videos.slice(0, limit);
+}
