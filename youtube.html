@@ -59,10 +59,8 @@
 
     <div id="ytplayer"></div>
     <div id="timeline-time" style="text-align:center; color:#ccc; font-size:0.95rem; margin-bottom:2px; display:flex; justify-content:center; align-items:center; gap:8px;">
-      <button id="timeline-cancel-btn" title="Cancel seek" style="margin-right:8px; font-size:1.1em; display:none;">❌</button>
       <span id="timeline-time-span"></span>
       <span id="timeline-drag-span" style="color:#6cf06c; display:none; margin-left:8px;"></span>
-      <button id="timeline-apply-btn" title="Seek to this time" style="margin-left:8px; font-size:1.1em; display:none;">✅</button>
     </div>
     <input
       id="timeline"
@@ -73,6 +71,23 @@
       step="1"
       style="width: 100%; margin: 10px 0;"
     />
+    <div id="timeline-controls" style="display:none; flex-direction:column; align-items:center; gap:6px; margin:4px 0 10px 0;">
+      <div style="display:flex; justify-content:center; align-items:center; gap:6px; flex-wrap:wrap;">
+        <button data-offset="-15" style="background:#232323; color:#ff6b6b; border:1px solid #333; border-radius:8px; font-size:1rem; font-weight:bold; padding:10px 14px; cursor:pointer;">-15</button>
+        <button data-offset="-10" style="background:#232323; color:#ff6b6b; border:1px solid #333; border-radius:8px; font-size:1rem; font-weight:bold; padding:10px 14px; cursor:pointer;">-10</button>
+        <button data-offset="-5" style="background:#232323; color:#ff6b6b; border:1px solid #333; border-radius:8px; font-size:1rem; font-weight:bold; padding:10px 14px; cursor:pointer;">-5</button>
+        <button data-offset="5" style="background:#232323; color:#6cf06c; border:1px solid #333; border-radius:8px; font-size:1rem; font-weight:bold; padding:10px 14px; cursor:pointer;">+5</button>
+        <button data-offset="10" style="background:#232323; color:#6cf06c; border:1px solid #333; border-radius:8px; font-size:1rem; font-weight:bold; padding:10px 14px; cursor:pointer;">+10</button>
+        <button data-offset="15" style="background:#232323; color:#6cf06c; border:1px solid #333; border-radius:8px; font-size:1rem; font-weight:bold; padding:10px 14px; cursor:pointer;">+15</button>
+      </div>
+      <div style="display:flex; justify-content:center; align-items:center; gap:6px;">
+        <button id="timeline-apply-btn" title="Seek to this time" style="background:#232323; color:#6cf06c; border:1px solid #6cf06c; border-radius:8px; font-size:1.1rem; font-weight:bold; padding:10px 20px; cursor:pointer;">Apply</button>
+        <button id="timeline-rel-toggle" style="background:#232323; color:#8ecae6; border:1px solid #333; border-radius:8px; font-size:0.85rem; font-weight:bold; padding:10px 12px; cursor:pointer;">Rel</button>
+        <button id="timeline-cancel-btn" title="Cancel seek" style="background:#232323; color:#ff6b6b; border:1px solid #ff6b6b; border-radius:8px; font-size:1.1rem; font-weight:bold; padding:10px 20px; cursor:pointer;">Cancel</button>
+      </div>
+    </div>
+
+    <div id="chapters-container" style="display: none; margin: 8px 0; padding: 0 4px;"></div>
 
     <div style="display: flex; justify-content: center; margin: 10px 0;">
       <button

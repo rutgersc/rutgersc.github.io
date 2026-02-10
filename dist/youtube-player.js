@@ -1,6 +1,7 @@
 import { extractYouTubeId, extractTimestamp, formatTime, resolveChannelDetails } from './video-utils.js';
 import { addToHistory, updateHistoryProgress } from './history.js';
 import { isVideoInWatchLater, removeFromWatchLater, loadWatchLater } from './watch-later.js';
+import { fetchChapters, renderChapters, highlightCurrentChapter } from './chapters.js';
 export let player;
 let savingTimer;
 let currentPlayerState = -1;
@@ -10,8 +11,13 @@ let timelineTimeSpan;
 let timelineDragSpan;
 let timelineApplyBtn;
 let timelineCancelBtn;
+let timelineControls;
+let timelineRelToggle;
 let timelineDragging = false;
 let dragValue = 0;
+let dragRelative = true;
+let dragOffset = 0;
+let currentChapters = [];
 let playPauseBtn;
 export function initializePlayer() {
     const tag = document.createElement("script");
@@ -24,6 +30,8 @@ export function initializePlayer() {
     timelineDragSpan = document.getElementById("timeline-drag-span");
     timelineApplyBtn = document.getElementById("timeline-apply-btn");
     timelineCancelBtn = document.getElementById("timeline-cancel-btn");
+    timelineControls = document.getElementById("timeline-controls");
+    timelineRelToggle = document.getElementById("timeline-rel-toggle");
     playPauseBtn = document.getElementById("play-pause-btn");
     setupTimelineListeners();
     setupPlayPauseButton();
@@ -88,62 +96,112 @@ function getPosition() {
     return Number(localStorage.getItem("vid-" + vid)) || 0;
 }
 function updateTimeline() {
-    if (!player || !timeline || !timelineTimeSpan || !timelineDragSpan || !timelineApplyBtn || !timelineCancelBtn)
+    if (!player || !timeline || !timelineTimeSpan || !timelineDragSpan || !timelineControls)
         return;
     const duration = player.getDuration();
     const current = player.getCurrentTime();
     if (duration > 0) {
         timeline.max = String(Math.floor(duration));
-        if (!timelineDragging) {
+        if (timelineDragging) {
+            if (dragRelative) {
+                const target = Math.max(0, Math.min(Math.floor(current + dragOffset), Math.floor(duration)));
+                dragValue = target;
+                timeline.value = String(target);
+                const sign = dragOffset >= 0 ? "+" : "";
+                timelineDragSpan.textContent = `${sign}${dragOffset}s \u2192 ${formatTime(target)}`;
+            }
+            else {
+                timeline.value = String(dragValue);
+                timelineDragSpan.textContent = `\u2192 ${formatTime(dragValue)}`;
+            }
+            timelineDragSpan.style.display = "";
+            timelineControls.style.display = "flex";
+        }
+        else {
             timeline.value = String(Math.floor(current));
+            timelineDragSpan.textContent = "";
+            timelineDragSpan.style.display = "none";
+            timelineControls.style.display = "none";
         }
         timelineTimeSpan.textContent = formatTime(current) + " / " + formatTime(duration);
         timelineTimeSpan.style.color = "#ccc";
-        if (timelineDragging) {
-            timelineDragSpan.textContent = formatTime(dragValue);
-            timelineDragSpan.style.display = "";
-            timelineApplyBtn.style.display = "";
-            timelineCancelBtn.style.display = "";
-        }
-        else {
-            timelineDragSpan.textContent = "";
-            timelineDragSpan.style.display = "none";
-            timelineApplyBtn.style.display = "none";
-            timelineCancelBtn.style.display = "none";
-        }
     }
     else {
         timelineTimeSpan.textContent = "--:-- / --:--";
         timelineTimeSpan.style.color = "#ccc";
         timelineDragSpan.textContent = "";
         timelineDragSpan.style.display = "none";
-        timelineApplyBtn.style.display = "none";
-        timelineCancelBtn.style.display = "none";
+        timelineControls.style.display = "none";
+    }
+    if (timelineRelToggle) {
+        timelineRelToggle.textContent = dragRelative ? "Rel" : "Abs";
+        timelineRelToggle.style.color = dragRelative ? "#8ecae6" : "#ffd166";
+    }
+    if (currentChapters.length > 0) {
+        highlightCurrentChapter(currentChapters, current);
     }
 }
 function setupTimelineListeners() {
-    if (!timeline || !timelineApplyBtn || !timelineCancelBtn)
+    if (!timeline || !timelineApplyBtn || !timelineCancelBtn || !timelineControls || !timelineRelToggle)
         return;
-    timeline.addEventListener("input", function () {
+    timeline.addEventListener("input", () => {
         timelineDragging = true;
-        dragValue = Number(timeline.value);
+        const val = Number(timeline.value);
+        if (dragRelative) {
+            dragOffset = val - Math.floor(player?.getCurrentTime() ?? 0);
+        }
+        else {
+            dragValue = val;
+        }
         updateTimeline();
     });
-    timeline.addEventListener("change", function () {
-        dragValue = Number(timeline.value);
+    timeline.addEventListener("change", () => {
+        const val = Number(timeline.value);
+        if (dragRelative) {
+            dragOffset = val - Math.floor(player?.getCurrentTime() ?? 0);
+        }
+        else {
+            dragValue = val;
+        }
         updateTimeline();
     });
-    timelineApplyBtn.onclick = function () {
+    timelineApplyBtn.onclick = () => {
         if (player?.seekTo) {
-            player.seekTo(Number(dragValue), true);
+            const target = dragRelative
+                ? Math.floor(player.getCurrentTime()) + dragOffset
+                : dragValue;
+            player.seekTo(Math.max(0, target), true);
         }
         timelineDragging = false;
         updateTimeline();
     };
-    timelineCancelBtn.onclick = function () {
+    timelineCancelBtn.onclick = () => {
         timelineDragging = false;
         updateTimeline();
     };
+    timelineRelToggle.onclick = () => {
+        if (!player)
+            return;
+        const current = Math.floor(player.getCurrentTime());
+        const duration = Math.floor(player.getDuration());
+        if (dragRelative) {
+            dragValue = Math.max(0, Math.min(current + dragOffset, duration));
+            dragRelative = false;
+        }
+        else {
+            dragOffset = dragValue - current;
+            dragRelative = true;
+        }
+        updateTimeline();
+    };
+    timelineControls.querySelectorAll("[data-offset]").forEach(btn => {
+        btn.onclick = () => {
+            dragOffset = Number(btn.dataset.offset);
+            dragRelative = true;
+            timelineDragging = true;
+            updateTimeline();
+        };
+    });
 }
 function updatePlayPauseButton() {
     if (!playPauseBtn)
@@ -247,6 +305,14 @@ export async function apply_vid(vid) {
                 await removeFromWatchLater(checklistItemId, null);
                 await loadWatchLater();
             }
+            const chapters = await fetchChapters(videoData.video_id);
+            currentChapters = chapters;
+            renderChapters(chapters, (seconds) => {
+                dragValue = seconds;
+                dragOffset = seconds - Math.floor(player?.getCurrentTime() ?? 0);
+                timelineDragging = true;
+                updateTimeline();
+            });
         }, 2000);
     }
 }

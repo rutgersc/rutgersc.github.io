@@ -457,6 +457,8 @@ export function initViewportManager() {
     const ytplayer = document.getElementById("ytplayer");
     const timeline = document.getElementById("timeline");
     const timelineTime = document.getElementById("timeline-time");
+    const timelineControls = document.getElementById("timeline-controls");
+    const chaptersContainer = document.getElementById("chapters-container");
     if (!switchWidthBtn || !ytplayer || !timeline || !timelineTime)
         return;
     let isFullWidth = true;
@@ -478,6 +480,16 @@ export function initViewportManager() {
             timelineTime.style.position = "";
             timelineTime.style.left = "";
             timelineTime.style.width = "";
+            if (timelineControls) {
+                timelineControls.style.position = "";
+                timelineControls.style.left = "";
+                timelineControls.style.width = "";
+            }
+            if (chaptersContainer) {
+                chaptersContainer.style.position = "";
+                chaptersContainer.style.left = "";
+                chaptersContainer.style.width = "";
+            }
             switchWidthBtn.textContent = "Viewport";
         }
         else {
@@ -494,6 +506,16 @@ export function initViewportManager() {
             timelineTime.style.position = "relative";
             timelineTime.style.left = viewportLeft + "px";
             timelineTime.style.width = viewportWidth + "px";
+            if (timelineControls) {
+                timelineControls.style.position = "relative";
+                timelineControls.style.left = viewportLeft + "px";
+                timelineControls.style.width = viewportWidth + "px";
+            }
+            if (chaptersContainer) {
+                chaptersContainer.style.position = "relative";
+                chaptersContainer.style.left = viewportLeft + "px";
+                chaptersContainer.style.width = viewportWidth + "px";
+            }
             switchWidthBtn.textContent = "Full";
         }
         isFullWidth = full;

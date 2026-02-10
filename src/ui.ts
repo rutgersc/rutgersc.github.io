@@ -545,6 +545,8 @@ export function initViewportManager(): void {
   const ytplayer = document.getElementById("ytplayer") as HTMLElement | null;
   const timeline = document.getElementById("timeline") as HTMLInputElement | null;
   const timelineTime = document.getElementById("timeline-time") as HTMLElement | null;
+  const timelineControls = document.getElementById("timeline-controls") as HTMLElement | null;
+  const chaptersContainer = document.getElementById("chapters-container") as HTMLElement | null;
 
   if (!switchWidthBtn || !ytplayer || !timeline || !timelineTime) return;
 
@@ -569,6 +571,16 @@ export function initViewportManager(): void {
       timelineTime.style.position = "";
       timelineTime.style.left = "";
       timelineTime.style.width = "";
+      if (timelineControls) {
+        timelineControls.style.position = "";
+        timelineControls.style.left = "";
+        timelineControls.style.width = "";
+      }
+      if (chaptersContainer) {
+        chaptersContainer.style.position = "";
+        chaptersContainer.style.left = "";
+        chaptersContainer.style.width = "";
+      }
       switchWidthBtn.textContent = "Viewport";
     } else {
       const viewportWidth = window.visualViewport?.width ?? window.innerWidth;
@@ -588,6 +600,18 @@ export function initViewportManager(): void {
       timelineTime.style.position = "relative";
       timelineTime.style.left = viewportLeft + "px";
       timelineTime.style.width = viewportWidth + "px";
+
+      if (timelineControls) {
+        timelineControls.style.position = "relative";
+        timelineControls.style.left = viewportLeft + "px";
+        timelineControls.style.width = viewportWidth + "px";
+      }
+
+      if (chaptersContainer) {
+        chaptersContainer.style.position = "relative";
+        chaptersContainer.style.left = viewportLeft + "px";
+        chaptersContainer.style.width = viewportWidth + "px";
+      }
 
       switchWidthBtn.textContent = "Full";
     }
