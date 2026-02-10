@@ -1,5 +1,4 @@
-import { formatTime } from './video-utils.js';
-const YOUTUBE_API_KEY = "AIzaSyDNjnKlfMnFODoLsJAl7B7HCn24AWN1tvQ";
+import { formatTime, YOUTUBE_API_KEY } from './video-utils.js';
 const parseTimestamp = (hours, minutes, seconds) => (parseInt(hours ?? "0", 10)) * 3600 + parseInt(minutes, 10) * 60 + parseInt(seconds, 10);
 const parseChaptersFromDescription = (description) => {
     const regex = /^(?:(\d{1,2}):)?(\d{1,2}):(\d{2})\s+(.+)$/gm;

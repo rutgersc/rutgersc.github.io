@@ -267,12 +267,24 @@ export function renderVideoItem(videoData, dateViewed, options = {}) {
                 title.style.textOverflow = "ellipsis";
                 title.style.marginBottom = "2px";
                 title.title = video.title;
-                const date = document.createElement("div");
-                date.textContent = video.published ? getTimeAgo(new Date(video.published)) : "";
-                date.style.color = "#888";
-                date.style.fontSize = "0.75rem";
+                const meta = document.createElement("div");
+                meta.style.color = "#888";
+                meta.style.fontSize = "0.75rem";
+                meta.style.display = "flex";
+                meta.style.gap = "8px";
+                if (video.published) {
+                    const date = document.createElement("span");
+                    date.textContent = getTimeAgo(new Date(video.published));
+                    meta.appendChild(date);
+                }
+                if (video.durationSeconds != null) {
+                    const dur = document.createElement("span");
+                    dur.textContent = formatTime(video.durationSeconds);
+                    dur.style.color = "#8ecae6";
+                    meta.appendChild(dur);
+                }
                 info.appendChild(title);
-                info.appendChild(date);
+                info.appendChild(meta);
                 const playBtn = document.createElement("button");
                 playBtn.textContent = "▶️";
                 playBtn.title = "Play";

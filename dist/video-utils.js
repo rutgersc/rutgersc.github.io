@@ -90,7 +90,8 @@ export async function resolveChannelDetails(videoId) {
     }
     return { author_url: null };
 }
-function extractChannelId(authorUrl, authorId) {
+export const YOUTUBE_API_KEY = "AIzaSyDNjnKlfMnFODoLsJAl7B7HCn24AWN1tvQ";
+const extractChannelId = (authorUrl, authorId) => {
     if (authorId)
         return authorId;
     if (!authorUrl)
@@ -102,13 +103,22 @@ function extractChannelId(authorUrl, authorId) {
     if (userMatch)
         return `@${userMatch[1]}`;
     return null;
-}
+};
+const resolveUploadsPlaylistId = async (channelId) => {
+    if (channelId.startsWith('UC'))
+        return `UU${channelId.slice(2)}`;
+    const res = await fetch(`https://www.googleapis.com/youtube/v3/channels?part=contentDetails&forHandle=${encodeURIComponent(channelId)}&key=${YOUTUBE_API_KEY}`);
+    if (!res.ok)
+        return null;
+    const data = await res.json();
+    return data?.items?.[0]?.contentDetails?.relatedPlaylists?.uploads ?? null;
+};
 export async function fetchChannelVideos(authorUrl, authorId, limit = 10) {
     const channelId = extractChannelId(authorUrl, authorId);
     if (!channelId)
         return [];
     const cacheKey = `channelVideos:${channelId}`;
-    const cacheExpiry = 30 * 60 * 1000; // 30 minutes
+    const cacheExpiry = 30 * 60 * 1000;
     const cached = localStorage.getItem(cacheKey);
     if (cached) {
         const { videos, timestamp } = JSON.parse(cached);
@@ -116,28 +126,45 @@ export async function fetchChannelVideos(authorUrl, authorId, limit = 10) {
             return videos.slice(0, limit);
         }
     }
-    const isHandle = channelId.startsWith('@');
-    const feedUrl = isHandle
-        ? `https://www.youtube.com/feeds/videos.xml?user=${channelId.slice(1)}`
-        : `https://www.youtube.com/feeds/videos.xml?channel_id=${channelId}`;
-    const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(feedUrl)}`;
-    const res = await fetch(proxyUrl);
+    const uploadsPlaylistId = await resolveUploadsPlaylistId(channelId);
+    if (!uploadsPlaylistId)
+        return [];
+    const res = await fetch(`https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&playlistId=${encodeURIComponent(uploadsPlaylistId)}&maxResults=${limit}&key=${YOUTUBE_API_KEY}`);
     if (!res.ok)
-        throw new Error(`Failed to fetch channel feed: ${res.status}`);
-    const xml = await res.text();
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(xml, 'application/xml');
-    const entries = doc.querySelectorAll('entry');
-    const videos = Array.from(entries).map(entry => {
-        const videoIdEl = entry.querySelector('yt\\:videoId, videoId');
-        const titleEl = entry.querySelector('title');
-        const publishedEl = entry.querySelector('published');
-        return {
-            videoId: videoIdEl?.textContent ?? '',
-            title: titleEl?.textContent ?? 'Unknown',
-            published: publishedEl?.textContent ?? ''
-        };
-    }).filter(v => v.videoId);
+        return [];
+    const data = await res.json();
+    const videoIds = (data?.items ?? [])
+        .map((item) => item.snippet?.resourceId?.videoId)
+        .filter((id) => !!id);
+    const durations = videoIds.length > 0 ? await fetchVideoDurations(videoIds) : {};
+    const videos = (data?.items ?? [])
+        .map((item) => ({
+        videoId: item.snippet?.resourceId?.videoId ?? '',
+        title: item.snippet?.title ?? 'Unknown',
+        published: item.snippet?.publishedAt ?? '',
+        durationSeconds: durations[item.snippet?.resourceId?.videoId ?? ''] ?? null,
+    }))
+        .filter((v) => v.videoId);
     localStorage.setItem(cacheKey, JSON.stringify({ videos, timestamp: Date.now() }));
-    return videos.slice(0, limit);
+    return videos;
+}
+const parseIsoDuration = (iso) => {
+    const match = iso.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
+    if (!match)
+        return 0;
+    return (parseInt(match[1] ?? '0', 10)) * 3600
+        + (parseInt(match[2] ?? '0', 10)) * 60
+        + (parseInt(match[3] ?? '0', 10));
+};
+async function fetchVideoDurations(videoIds) {
+    const res = await fetch(`https://www.googleapis.com/youtube/v3/videos?part=contentDetails&id=${videoIds.join(',')}&key=${YOUTUBE_API_KEY}`);
+    if (!res.ok)
+        return {};
+    const data = await res.json();
+    return (data?.items ?? []).reduce((acc, item) => {
+        if (item.id && item.contentDetails?.duration) {
+            acc[item.id] = parseIsoDuration(item.contentDetails.duration);
+        }
+        return acc;
+    }, {});
 }

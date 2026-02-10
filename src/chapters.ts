@@ -1,11 +1,9 @@
-import { formatTime } from './video-utils.js';
+import { formatTime, YOUTUBE_API_KEY } from './video-utils.js';
 
 export interface Chapter {
   readonly title: string;
   readonly startSeconds: number;
 }
-
-const YOUTUBE_API_KEY = "AIzaSyDNjnKlfMnFODoLsJAl7B7HCn24AWN1tvQ";
 
 const parseTimestamp = (hours: string | undefined, minutes: string, seconds: string): number =>
   (parseInt(hours ?? "0", 10)) * 3600 + parseInt(minutes, 10) * 60 + parseInt(seconds, 10);
