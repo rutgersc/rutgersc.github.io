@@ -18,6 +18,7 @@ let dragValue = 0;
 let dragRelative = true;
 let dragOffset = 0;
 let currentChapters = [];
+const onPlayerReadyHooks = [];
 let playPauseBtn;
 export function initializePlayer() {
     const tag = document.createElement("script");
@@ -35,6 +36,7 @@ export function initializePlayer() {
     playPauseBtn = document.getElementById("play-pause-btn");
     setupTimelineListeners();
     setupPlayPauseButton();
+    setupVolumeControls();
     window.addEventListener('hashchange', onhashchange);
     window.onbeforeunload = savePosition;
     setInterval(updateTimeline, 500);
@@ -172,7 +174,6 @@ function setupTimelineListeners() {
                 : dragValue;
             player.seekTo(Math.max(0, target), true);
         }
-        timelineDragging = false;
         updateTimeline();
     };
     timelineCancelBtn.onclick = () => {
@@ -238,11 +239,31 @@ function setupPlayPauseButton() {
         }
     };
 }
+function setupVolumeControls() {
+    const volumeLabel = document.getElementById("volume-label");
+    const volDownBtn = document.getElementById("vol-down-btn");
+    const volUpBtn = document.getElementById("vol-up-btn");
+    if (!volumeLabel || !volDownBtn || !volUpBtn)
+        return;
+    let currentVol = Number(localStorage.getItem("yt-volume") ?? "100");
+    const setVolume = (vol) => {
+        currentVol = Math.max(0, Math.min(100, vol));
+        if (player)
+            player.setVolume(currentVol);
+        volumeLabel.textContent = String(currentVol);
+        localStorage.setItem("yt-volume", String(currentVol));
+    };
+    volumeLabel.textContent = String(currentVol);
+    volDownBtn.onclick = () => setVolume(currentVol - 10);
+    volUpBtn.onclick = () => setVolume(currentVol + 10);
+    onPlayerReadyHooks.push(() => setVolume(currentVol));
+}
 function onPlayerReady() {
     console.log("onPlayerReady");
     onhashchange();
     updateTimeline();
     updatePlayPauseButton();
+    onPlayerReadyHooks.forEach(fn => fn());
 }
 function onhashchange() {
     const vid = window.location.hash?.substring(1);

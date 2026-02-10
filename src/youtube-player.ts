@@ -102,6 +102,7 @@ let dragRelative = true;
 let dragOffset = 0;
 
 let currentChapters: readonly Chapter[] = [];
+const onPlayerReadyHooks: (() => void)[] = [];
 
 let playPauseBtn: HTMLButtonElement | null;
 
@@ -124,6 +125,7 @@ export function initializePlayer(): void {
 
   setupTimelineListeners();
   setupPlayPauseButton();
+  setupVolumeControls();
   window.addEventListener('hashchange', onhashchange);
   window.onbeforeunload = savePosition;
 
@@ -266,7 +268,6 @@ function setupTimelineListeners(): void {
         : dragValue;
       player.seekTo(Math.max(0, target), true);
     }
-    timelineDragging = false;
     updateTimeline();
   };
 
@@ -334,11 +335,35 @@ function setupPlayPauseButton(): void {
   };
 }
 
+function setupVolumeControls(): void {
+  const volumeLabel = document.getElementById("volume-label");
+  const volDownBtn = document.getElementById("vol-down-btn") as HTMLButtonElement | null;
+  const volUpBtn = document.getElementById("vol-up-btn") as HTMLButtonElement | null;
+  if (!volumeLabel || !volDownBtn || !volUpBtn) return;
+
+  let currentVol = Number(localStorage.getItem("yt-volume") ?? "100");
+
+  const setVolume = (vol: number) => {
+    currentVol = Math.max(0, Math.min(100, vol));
+    if (player) player.setVolume(currentVol);
+    volumeLabel.textContent = String(currentVol);
+    localStorage.setItem("yt-volume", String(currentVol));
+  };
+
+  volumeLabel.textContent = String(currentVol);
+
+  volDownBtn.onclick = () => setVolume(currentVol - 10);
+  volUpBtn.onclick = () => setVolume(currentVol + 10);
+
+  onPlayerReadyHooks.push(() => setVolume(currentVol));
+}
+
 function onPlayerReady(): void {
   console.log("onPlayerReady");
   onhashchange();
   updateTimeline();
   updatePlayPauseButton();
+  onPlayerReadyHooks.forEach(fn => fn());
 }
 
 function onhashchange(): void {

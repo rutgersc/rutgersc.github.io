@@ -24,32 +24,44 @@ const parseChaptersFromDescription = (description: string): readonly Chapter[] =
 };
 
 export const fetchChapters = async (videoId: string): Promise<readonly Chapter[]> => {
+  console.log("fetchChapters: starting for", videoId);
   const cacheKey = `chapters:${videoId}`;
   const cached = localStorage.getItem(cacheKey);
   if (cached) {
     try {
-      return JSON.parse(cached) as Chapter[];
+      const parsed = JSON.parse(cached) as Chapter[];
+      console.log("fetchChapters: loaded from cache,", parsed.length, "chapters");
+      return parsed;
     } catch {
       // ignore bad cache
     }
   }
 
   try {
-    const response = await fetch(
-      `https://www.googleapis.com/youtube/v3/videos?part=snippet&id=${encodeURIComponent(videoId)}&key=${YOUTUBE_API_KEY}`
-    );
-    if (!response.ok) return [];
+    const url = `https://www.googleapis.com/youtube/v3/videos?part=snippet&id=${encodeURIComponent(videoId)}&key=${YOUTUBE_API_KEY}`;
+    console.log("fetchChapters: calling API");
+    const response = await fetch(url);
+    if (!response.ok) {
+      console.log("fetchChapters: API error", response.status, response.statusText);
+      return [];
+    }
 
     const data = await response.json();
     const description: string | undefined = data?.items?.[0]?.snippet?.description;
-    if (!description) return [];
+    if (!description) {
+      console.log("fetchChapters: no description found");
+      return [];
+    }
 
+    console.log("fetchChapters: description length", description.length);
     const chapters = parseChaptersFromDescription(description);
+    console.log("fetchChapters: parsed", chapters.length, "chapters", chapters);
     if (chapters.length > 0) {
       localStorage.setItem(cacheKey, JSON.stringify(chapters));
     }
     return chapters;
-  } catch {
+  } catch (e) {
+    console.log("fetchChapters: error", e);
     return [];
   }
 };
@@ -93,6 +105,7 @@ export const renderChapters = (chapters: readonly Chapter[], onSeek: (seconds: n
   container.appendChild(wrapper);
   container.style.display = "block";
 };
+
 
 export const highlightCurrentChapter = (chapters: readonly Chapter[], currentTime: number): void => {
   const container = document.getElementById("chapters-container");

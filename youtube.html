@@ -89,7 +89,7 @@
 
     <div id="chapters-container" style="display: none; margin: 8px 0; padding: 0 4px;"></div>
 
-    <div style="display: flex; justify-content: center; margin: 10px 0;">
+    <div style="display: flex; justify-content: center; align-items: center; margin: 10px 0; gap: 10px;">
       <button
         id="play-pause-btn"
         style="
@@ -103,11 +103,15 @@
           box-shadow: 0 2px 8px rgba(0,0,0,0.12);
           cursor: pointer;
           transition: background 0.2s, color 0.2s;
-          margin-right: 10px;
         "
         onmouseover="this.style.background='#1a1a1a';this.style.color='#fff';"
         onmouseout="this.style.background='#232323';this.style.color='#6cf06c';"
       >Play/Pause</button>
+      <div style="display: flex; align-items: center; gap: 6px;">
+        <button id="vol-down-btn" style="background:#232323; color:#ff6b6b; border:1px solid #333; border-radius:8px; font-size:1rem; font-weight:bold; padding:10px 14px; cursor:pointer;">-</button>
+        <span id="volume-label" style="color:#ccc; font-size:0.95rem; font-weight:bold; min-width:28px; text-align:center;">100</span>
+        <button id="vol-up-btn" style="background:#232323; color:#6cf06c; border:1px solid #333; border-radius:8px; font-size:1rem; font-weight:bold; padding:10px 14px; cursor:pointer;">+</button>
+      </div>
       <button
         id="switch-width-btn"
         style="
