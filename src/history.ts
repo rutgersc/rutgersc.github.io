@@ -178,29 +178,48 @@ export function compactHistoryUpTo(index: number): void {
 
   const eventsToCompact = history.slice(index);
 
-  const channelGroups: Record<string, ChannelGroup> = {};
+  const channelKey = (g: { author_id?: string; author_url?: string; author: string }) =>
+    g.author_id || g.author_url || g.author;
+
+  const existing = getCompactedHistory();
+  const channelGroups: Record<string, ChannelGroup> = (existing?.channels ?? []).reduce(
+    (acc, group) => ({ ...acc, [channelKey(group)]: { ...group, videos: [...group.videos] } }),
+    {} as Record<string, ChannelGroup>
+  );
+
   eventsToCompact.forEach(event => {
-    const channelKey = event.videoData.author_id || event.videoData.author_url || event.videoData.author;
-    if (!channelGroups[channelKey]) {
-      channelGroups[channelKey] = {
+    const key = channelKey(event.videoData);
+    if (!channelGroups[key]) {
+      channelGroups[key] = {
         author: event.videoData.author,
         author_url: event.videoData.author_url,
         author_id: event.videoData.author_id,
         videos: []
       };
     }
-    channelGroups[channelKey].videos.push({
+    channelGroups[key].videos.push({
       videoData: event.videoData,
       dateViewed: event.dateViewed,
       wasWatchLater: event.wasWatchLater
     });
   });
 
-  const sortedChannels = Object.values(channelGroups).sort((a, b) => b.videos.length - a.videos.length);
+  const deduped = Object.values(channelGroups).map(group => ({
+    ...group,
+    videos: Object.values(
+      group.videos.reduce((acc, v) => {
+        const prev = acc[v.videoData.video_id];
+        if (!prev || v.dateViewed > prev.dateViewed) {
+          acc[v.videoData.video_id] = v;
+        }
+        return acc;
+      }, {} as Record<string, (typeof group.videos)[number]>)
+    )
+  }));
 
   const compacted: CompactedHistory = {
     compactedAt: new Date().toISOString(),
-    channels: sortedChannels
+    channels: deduped.sort((a, b) => b.videos.length - a.videos.length)
   };
 
   setCompactedHistory(compacted);

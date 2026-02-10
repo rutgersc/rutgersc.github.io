@@ -398,8 +398,26 @@ export function renderCompactedSection(compacted) {
         leftSide.style.alignItems = "center";
         leftSide.appendChild(channelName);
         leftSide.appendChild(videoCount);
+        const latestBtn = document.createElement("button");
+        latestBtn.textContent = "📺";
+        latestBtn.title = "Latest channel videos";
+        latestBtn.style.background = "#3a3a3a";
+        latestBtn.style.color = "#fff";
+        latestBtn.style.border = "none";
+        latestBtn.style.borderRadius = "4px";
+        latestBtn.style.padding = "2px 8px";
+        latestBtn.style.cursor = "pointer";
+        latestBtn.style.fontSize = "0.9em";
+        latestBtn.style.marginLeft = "8px";
+        latestBtn.onmouseenter = () => latestBtn.style.background = "#4a4a4a";
+        latestBtn.onmouseleave = () => latestBtn.style.background = "#3a3a3a";
+        const rightSide = document.createElement("div");
+        rightSide.style.display = "flex";
+        rightSide.style.alignItems = "center";
+        rightSide.appendChild(toggleIcon);
+        rightSide.appendChild(latestBtn);
         channelHeader.appendChild(leftSide);
-        channelHeader.appendChild(toggleIcon);
+        channelHeader.appendChild(rightSide);
         const videosContainer = document.createElement("div");
         videosContainer.style.display = "none";
         videosContainer.style.marginTop = "10px";
@@ -452,14 +470,111 @@ export function renderCompactedSection(compacted) {
             videosContainer.appendChild(videoLine);
         });
         channelHeader.onclick = (e) => {
-            if (e.target === channelName)
+            if (e.target === channelName || e.target.closest?.("button") === latestBtn)
                 return;
             const isHidden = videosContainer.style.display === "none";
             videosContainer.style.display = isHidden ? "block" : "none";
             toggleIcon.textContent = isHidden ? "▴" : "▾";
         };
+        const latestContainer = document.createElement("div");
+        latestContainer.style.display = "none";
+        latestContainer.style.marginTop = "10px";
+        latestContainer.style.paddingTop = "10px";
+        latestContainer.style.borderTop = "1px solid #444";
+        let latestFetched = false;
+        const renderChannelVideoItem = (video) => {
+            const item = document.createElement("div");
+            item.style.display = "flex";
+            item.style.alignItems = "center";
+            item.style.justifyContent = "space-between";
+            item.style.padding = "6px 0";
+            item.style.borderBottom = "1px solid #333";
+            const info = document.createElement("div");
+            info.style.flex = "1";
+            info.style.minWidth = "0";
+            info.style.marginRight = "10px";
+            const title = document.createElement("div");
+            title.textContent = video.title;
+            title.style.color = "#fff";
+            title.style.fontSize = "0.85rem";
+            title.style.whiteSpace = "nowrap";
+            title.style.overflow = "hidden";
+            title.style.textOverflow = "ellipsis";
+            title.style.marginBottom = "2px";
+            title.title = video.title;
+            const meta = document.createElement("div");
+            meta.style.color = "#888";
+            meta.style.fontSize = "0.75rem";
+            meta.style.display = "flex";
+            meta.style.gap = "8px";
+            if (video.published) {
+                const date = document.createElement("span");
+                date.textContent = getTimeAgo(new Date(video.published));
+                meta.appendChild(date);
+            }
+            if (video.durationSeconds != null) {
+                const dur = document.createElement("span");
+                dur.textContent = formatTime(video.durationSeconds);
+                dur.style.color = "#8ecae6";
+                meta.appendChild(dur);
+            }
+            info.appendChild(title);
+            info.appendChild(meta);
+            const playBtn = document.createElement("button");
+            playBtn.textContent = "▶️";
+            playBtn.title = "Play";
+            playBtn.style.background = "#2d6a4f";
+            playBtn.style.color = "#fff";
+            playBtn.style.border = "none";
+            playBtn.style.borderRadius = "4px";
+            playBtn.style.padding = "4px 8px";
+            playBtn.style.cursor = "pointer";
+            playBtn.style.fontSize = "0.9em";
+            playBtn.style.flexShrink = "0";
+            playBtn.onmouseenter = () => playBtn.style.background = "#40916c";
+            playBtn.onmouseleave = () => playBtn.style.background = "#2d6a4f";
+            playBtn.onclick = () => apply_input_vid(video.videoId);
+            item.appendChild(info);
+            item.appendChild(playBtn);
+            return item;
+        };
+        latestBtn.onclick = async () => {
+            const isOpen = latestContainer.style.display !== "none";
+            if (isOpen) {
+                latestContainer.style.display = "none";
+                latestBtn.textContent = "📺";
+                latestBtn.title = "Latest channel videos";
+                return;
+            }
+            latestContainer.style.display = "block";
+            latestBtn.textContent = "📺";
+            latestBtn.title = "Collapse";
+            if (latestFetched)
+                return;
+            const status = document.createElement("div");
+            status.style.color = "#bbb";
+            status.style.fontSize = "0.9rem";
+            status.textContent = "Loading channel videos...";
+            latestContainer.appendChild(status);
+            try {
+                const videos = await fetchChannelVideos(channel.author_url, channel.author_id, 10);
+                if (videos.length === 0) {
+                    status.textContent = "No videos found for this channel.";
+                }
+                else {
+                    status.style.display = "none";
+                    videos.forEach(video => latestContainer.appendChild(renderChannelVideoItem(video)));
+                }
+            }
+            catch (e) {
+                console.warn("Failed to fetch channel videos", e);
+                status.textContent = "Failed to load channel videos.";
+            }
+            latestFetched = true;
+        };
         channelItem.appendChild(channelHeader);
         channelItem.appendChild(videosContainer);
+        channelItem.appendChild(latestContainer);
         section.appendChild(channelItem);
     });
     return section;
