@@ -109,6 +109,20 @@ export function clearHistory() {
         syncHistoryNow();
     }
 }
+export function getWatchedVideosIndex() {
+    const index = new Map();
+    const compacted = getCompactedHistory();
+    (compacted?.channels ?? []).flatMap(ch => ch.videos).forEach(v => {
+        index.set(v.videoData.video_id, { dateViewed: v.dateViewed });
+    });
+    getHistory().forEach(entry => {
+        const existing = index.get(entry.videoData.video_id);
+        if (!existing || entry.dateViewed > existing.dateViewed) {
+            index.set(entry.videoData.video_id, { dateViewed: entry.dateViewed });
+        }
+    });
+    return index;
+}
 export function getCompactedHistory() {
     return JSON.parse(localStorage.getItem("compactedHistory") || "null");
 }

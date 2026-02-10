@@ -24,6 +24,9 @@ export declare function addToHistory(videoData: VideoData, _name: string, wasWat
 export declare function updateHistoryProgress(videoId: string, currentTime: number, duration: number): void;
 export declare function renderHistory(): void;
 export declare function clearHistory(): void;
+export declare function getWatchedVideosIndex(): Map<string, {
+    dateViewed: string;
+}>;
 export declare function getCompactedHistory(): CompactedHistory | null;
 export declare function compactHistoryUpTo(index: number): void;
 export declare function clearCompactedHistory(): void;

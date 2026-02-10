@@ -2,6 +2,7 @@ import { getTimeAgo, formatTime, fetchChannelVideos } from './video-utils.js';
 import { apply_input_vid } from './youtube-player.js';
 import type { VideoData, VideoProgress, ChannelVideo } from './video-utils.js';
 import type { CompactedHistory } from './history.js';
+import { getWatchedVideosIndex } from './history.js';
 
 export interface RenderOptions {
   onRemove?: ((videoId: string) => void) | null;
@@ -14,6 +15,39 @@ export interface RenderOptions {
   showCompactButton?: boolean;
   progress?: VideoProgress | null;
 }
+
+const renderProgressBar = (currentTime: number, duration: number, percentage: number): HTMLDivElement => {
+  const bar = document.createElement("div");
+  bar.style.width = "100%";
+  bar.style.marginTop = "6px";
+  bar.style.marginBottom = "4px";
+
+  const container = document.createElement("div");
+  container.style.width = "100%";
+  container.style.height = "8px";
+  container.style.background = "#1a1a1a";
+  container.style.borderRadius = "4px";
+  container.style.overflow = "hidden";
+  container.style.border = "1px solid #333";
+
+  const fill = document.createElement("div");
+  fill.style.width = `${Math.min(percentage, 100)}%`;
+  fill.style.height = "100%";
+  fill.style.background = percentage >= 90 ? "#52b788" : "#ffd166";
+  fill.style.transition = "width 0.3s ease";
+
+  container.appendChild(fill);
+
+  const text = document.createElement("div");
+  text.style.fontSize = "0.75rem";
+  text.style.color = "#aaa";
+  text.style.marginTop = "2px";
+  text.textContent = `${formatTime(currentTime)} / ${formatTime(duration)} (${Math.round(percentage)}%)`;
+
+  bar.appendChild(container);
+  bar.appendChild(text);
+  return bar;
+};
 
 export function renderVideoItem(videoData: VideoData, dateViewed: string | null, options: RenderOptions = {}): HTMLLIElement {
   const {
@@ -221,38 +255,9 @@ export function renderVideoItem(videoData: VideoData, dateViewed: string | null,
   titleP.style.marginBottom = "2px";
   titleP.style.wordBreak = "break-word";
 
-  let progressBar: HTMLDivElement | null = null;
-  if (progress && progress.percentage !== undefined) {
-    progressBar = document.createElement("div");
-    progressBar.style.width = "100%";
-    progressBar.style.marginTop = "6px";
-    progressBar.style.marginBottom = "4px";
-
-    const progressBarContainer = document.createElement("div");
-    progressBarContainer.style.width = "100%";
-    progressBarContainer.style.height = "8px";
-    progressBarContainer.style.background = "#1a1a1a";
-    progressBarContainer.style.borderRadius = "4px";
-    progressBarContainer.style.overflow = "hidden";
-    progressBarContainer.style.border = "1px solid #333";
-
-    const progressBarFill = document.createElement("div");
-    progressBarFill.style.width = `${Math.min(progress.percentage, 100)}%`;
-    progressBarFill.style.height = "100%";
-    progressBarFill.style.background = progress.percentage >= 90 ? "#52b788" : "#ffd166";
-    progressBarFill.style.transition = "width 0.3s ease";
-
-    progressBarContainer.appendChild(progressBarFill);
-
-    const progressText = document.createElement("div");
-    progressText.style.fontSize = "0.75rem";
-    progressText.style.color = "#aaa";
-    progressText.style.marginTop = "2px";
-    progressText.textContent = `${formatTime(progress.currentTime)} / ${formatTime(progress.duration)} (${Math.round(progress.percentage)}%)`;
-
-    progressBar.appendChild(progressBarContainer);
-    progressBar.appendChild(progressText);
-  }
+  const progressBar = (progress && progress.percentage !== undefined)
+    ? renderProgressBar(progress.currentTime, progress.duration, progress.percentage)
+    : null;
 
   const expandContainer = document.createElement("div");
   expandContainer.style.display = "none";
@@ -301,13 +306,21 @@ export function renderVideoItem(videoData: VideoData, dateViewed: string | null,
       expandStatus.style.display = "none";
       channelVideosFetched = true;
 
+      const watchedIndex = getWatchedVideosIndex();
+
       const renderChannelVideoItem = (video: ChannelVideo): HTMLDivElement => {
+        const isWatched = watchedIndex.has(video.videoId);
+
         const item = document.createElement("div");
         item.style.display = "flex";
-        item.style.alignItems = "center";
-        item.style.justifyContent = "space-between";
+        item.style.flexDirection = "column";
         item.style.padding = "6px 0";
         item.style.borderBottom = "1px solid #333";
+
+        const row = document.createElement("div");
+        row.style.display = "flex";
+        row.style.alignItems = "center";
+        row.style.justifyContent = "space-between";
 
         const info = document.createElement("div");
         info.style.flex = "1";
@@ -315,7 +328,6 @@ export function renderVideoItem(videoData: VideoData, dateViewed: string | null,
         info.style.marginRight = "10px";
 
         const title = document.createElement("div");
-        title.textContent = video.title;
         title.style.color = "#fff";
         title.style.fontSize = "0.85rem";
         title.style.whiteSpace = "nowrap";
@@ -323,6 +335,15 @@ export function renderVideoItem(videoData: VideoData, dateViewed: string | null,
         title.style.textOverflow = "ellipsis";
         title.style.marginBottom = "2px";
         title.title = video.title;
+        if (isWatched) {
+          const check = document.createElement("span");
+          check.textContent = "✓ ";
+          check.style.color = "#52b788";
+          title.appendChild(check);
+          title.appendChild(document.createTextNode(video.title));
+        } else {
+          title.textContent = video.title;
+        }
 
         const meta = document.createElement("div");
         meta.style.color = "#888";
@@ -359,8 +380,21 @@ export function renderVideoItem(videoData: VideoData, dateViewed: string | null,
         playBtn.onmouseleave = () => playBtn.style.background = "#2d6a4f";
         playBtn.onclick = () => apply_input_vid(video.videoId);
 
-        item.appendChild(info);
-        item.appendChild(playBtn);
+        row.appendChild(info);
+        row.appendChild(playBtn);
+        item.appendChild(row);
+
+        if (isWatched) {
+          const saved = localStorage.getItem("vid-" + video.videoId);
+          if (saved && video.durationSeconds) {
+            const currentTime = parseFloat(saved);
+            if (currentTime > 0) {
+              const percentage = (currentTime / video.durationSeconds) * 100;
+              item.appendChild(renderProgressBar(currentTime, video.durationSeconds, percentage));
+            }
+          }
+        }
+
         return item;
       };
 
@@ -572,69 +606,6 @@ export function renderCompactedSection(compacted: CompactedHistory): HTMLDivElem
 
     let latestFetched = false;
 
-    const renderChannelVideoItem = (video: ChannelVideo): HTMLDivElement => {
-      const item = document.createElement("div");
-      item.style.display = "flex";
-      item.style.alignItems = "center";
-      item.style.justifyContent = "space-between";
-      item.style.padding = "6px 0";
-      item.style.borderBottom = "1px solid #333";
-
-      const info = document.createElement("div");
-      info.style.flex = "1";
-      info.style.minWidth = "0";
-      info.style.marginRight = "10px";
-
-      const title = document.createElement("div");
-      title.textContent = video.title;
-      title.style.color = "#fff";
-      title.style.fontSize = "0.85rem";
-      title.style.whiteSpace = "nowrap";
-      title.style.overflow = "hidden";
-      title.style.textOverflow = "ellipsis";
-      title.style.marginBottom = "2px";
-      title.title = video.title;
-
-      const meta = document.createElement("div");
-      meta.style.color = "#888";
-      meta.style.fontSize = "0.75rem";
-      meta.style.display = "flex";
-      meta.style.gap = "8px";
-      if (video.published) {
-        const date = document.createElement("span");
-        date.textContent = getTimeAgo(new Date(video.published));
-        meta.appendChild(date);
-      }
-      if (video.durationSeconds != null) {
-        const dur = document.createElement("span");
-        dur.textContent = formatTime(video.durationSeconds);
-        dur.style.color = "#8ecae6";
-        meta.appendChild(dur);
-      }
-
-      info.appendChild(title);
-      info.appendChild(meta);
-
-      const playBtn = document.createElement("button");
-      playBtn.textContent = "▶️";
-      playBtn.title = "Play";
-      playBtn.style.background = "#2d6a4f";
-      playBtn.style.color = "#fff";
-      playBtn.style.border = "none";
-      playBtn.style.borderRadius = "4px";
-      playBtn.style.padding = "4px 8px";
-      playBtn.style.cursor = "pointer";
-      playBtn.style.fontSize = "0.9em";
-      playBtn.style.flexShrink = "0";
-      playBtn.onmouseenter = () => playBtn.style.background = "#40916c";
-      playBtn.onmouseleave = () => playBtn.style.background = "#2d6a4f";
-      playBtn.onclick = () => apply_input_vid(video.videoId);
-
-      item.appendChild(info);
-      item.appendChild(playBtn);
-      return item;
-    };
-
     latestBtn.onclick = async () => {
       const isOpen = latestContainer.style.display !== "none";
       if (isOpen) {
@@ -662,6 +633,98 @@ export function renderCompactedSection(compacted: CompactedHistory): HTMLDivElem
           status.textContent = "No videos found for this channel.";
         } else {
           status.style.display = "none";
+          const watchedIndex = getWatchedVideosIndex();
+
+          const renderChannelVideoItem = (video: ChannelVideo): HTMLDivElement => {
+            const isWatched = watchedIndex.has(video.videoId);
+
+            const item = document.createElement("div");
+            item.style.display = "flex";
+            item.style.flexDirection = "column";
+            item.style.padding = "6px 0";
+            item.style.borderBottom = "1px solid #333";
+
+            const row = document.createElement("div");
+            row.style.display = "flex";
+            row.style.alignItems = "center";
+            row.style.justifyContent = "space-between";
+
+            const info = document.createElement("div");
+            info.style.flex = "1";
+            info.style.minWidth = "0";
+            info.style.marginRight = "10px";
+
+            const title = document.createElement("div");
+            title.style.color = "#fff";
+            title.style.fontSize = "0.85rem";
+            title.style.whiteSpace = "nowrap";
+            title.style.overflow = "hidden";
+            title.style.textOverflow = "ellipsis";
+            title.style.marginBottom = "2px";
+            title.title = video.title;
+            if (isWatched) {
+              const check = document.createElement("span");
+              check.textContent = "✓ ";
+              check.style.color = "#52b788";
+              title.appendChild(check);
+              title.appendChild(document.createTextNode(video.title));
+            } else {
+              title.textContent = video.title;
+            }
+
+            const meta = document.createElement("div");
+            meta.style.color = "#888";
+            meta.style.fontSize = "0.75rem";
+            meta.style.display = "flex";
+            meta.style.gap = "8px";
+            if (video.published) {
+              const date = document.createElement("span");
+              date.textContent = getTimeAgo(new Date(video.published));
+              meta.appendChild(date);
+            }
+            if (video.durationSeconds != null) {
+              const dur = document.createElement("span");
+              dur.textContent = formatTime(video.durationSeconds);
+              dur.style.color = "#8ecae6";
+              meta.appendChild(dur);
+            }
+
+            info.appendChild(title);
+            info.appendChild(meta);
+
+            const playBtn = document.createElement("button");
+            playBtn.textContent = "▶️";
+            playBtn.title = "Play";
+            playBtn.style.background = "#2d6a4f";
+            playBtn.style.color = "#fff";
+            playBtn.style.border = "none";
+            playBtn.style.borderRadius = "4px";
+            playBtn.style.padding = "4px 8px";
+            playBtn.style.cursor = "pointer";
+            playBtn.style.fontSize = "0.9em";
+            playBtn.style.flexShrink = "0";
+            playBtn.onmouseenter = () => playBtn.style.background = "#40916c";
+            playBtn.onmouseleave = () => playBtn.style.background = "#2d6a4f";
+            playBtn.onclick = () => apply_input_vid(video.videoId);
+
+            row.appendChild(info);
+            row.appendChild(playBtn);
+            item.appendChild(row);
+
+            if (isWatched) {
+              const saved = localStorage.getItem("vid-" + video.videoId);
+              if (saved && video.durationSeconds) {
+                const currentTime = parseFloat(saved);
+                if (currentTime > 0) {
+                  const percentage = (currentTime / video.durationSeconds) * 100;
+                  item.appendChild(renderProgressBar(currentTime, video.durationSeconds, percentage));
+                }
+              }
+            }
+
+            return item;
+          };
+
           videos.forEach(video => latestContainer.appendChild(renderChannelVideoItem(video)));
         }
       } catch (e) {

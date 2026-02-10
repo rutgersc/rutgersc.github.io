@@ -165,6 +165,24 @@ export function clearHistory(): void {
   }
 }
 
+export function getWatchedVideosIndex(): Map<string, { dateViewed: string }> {
+  const index = new Map<string, { dateViewed: string }>();
+
+  const compacted = getCompactedHistory();
+  (compacted?.channels ?? []).flatMap(ch => ch.videos).forEach(v => {
+    index.set(v.videoData.video_id, { dateViewed: v.dateViewed });
+  });
+
+  getHistory().forEach(entry => {
+    const existing = index.get(entry.videoData.video_id);
+    if (!existing || entry.dateViewed > existing.dateViewed) {
+      index.set(entry.videoData.video_id, { dateViewed: entry.dateViewed });
+    }
+  });
+
+  return index;
+}
+
 export function getCompactedHistory(): CompactedHistory | null {
   return JSON.parse(localStorage.getItem("compactedHistory") || "null") as CompactedHistory | null;
 }
