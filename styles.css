@@ -58,3 +58,15 @@ ul li {
   font-size: 0.9rem;
   color: #cccccc;
 }
+
+#msal-options > summary {
+  list-style: none;
+}
+
+#msal-options > summary::-webkit-details-marker {
+  display: none;
+}
+
+#msal-options[open] .msal-options-caret {
+  transform: rotate(180deg);
+}
