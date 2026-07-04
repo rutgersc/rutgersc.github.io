@@ -1,5 +1,9 @@
+html {
+  overscroll-behavior-y: contain;
+}
+
 body {
-  margin-top: 250px;
+  margin-top: 400px;
   background-color: #121212;
   color: #ffffff;
   padding-bottom: 150px;
@@ -59,14 +63,6 @@ ul li {
   color: #cccccc;
 }
 
-#msal-options > summary {
-  list-style: none;
-}
-
-#msal-options > summary::-webkit-details-marker {
-  display: none;
-}
-
-#msal-options[open] .msal-options-caret {
+#msal-user-info.msal-options-open .msal-options-caret {
   transform: rotate(180deg);
 }

@@ -58,6 +58,15 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         });
     }
+    const userInfoToggle = document.getElementById('msal-user-info');
+    const optionsPanel = document.getElementById('msal-options-panel');
+    if (userInfoToggle && optionsPanel) {
+        userInfoToggle.addEventListener('click', function () {
+            const isOpen = optionsPanel.style.display !== 'none';
+            optionsPanel.style.display = isOpen ? 'none' : 'flex';
+            userInfoToggle.classList.toggle('msal-options-open', !isOpen);
+        });
+    }
     renderHistory();
     const versionEl = document.getElementById('commit-hash');
     if (versionEl) {

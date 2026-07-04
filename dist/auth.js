@@ -16,17 +16,16 @@ export const msalScopes = ['openid', 'profile', 'offline_access', 'User.Read', '
 export const msalInstance = new msal.PublicClientApplication(msalConfig);
 export function updateMsalUi() {
     const btn = document.getElementById('msal-login-btn');
-    const status = document.getElementById('msal-login-status');
     const userInfo = document.getElementById('msal-user-info');
     const userName = document.getElementById('msal-user-name');
     const userEmail = document.getElementById('msal-user-email');
-    if (!btn || !status)
+    const optionsPanel = document.getElementById('msal-options-panel');
+    if (!btn)
         return;
     const account = msalInstance.getActiveAccount();
     if (account) {
         btn.textContent = 'Sign out';
         btn.style.color = '#ff6b6b';
-        status.textContent = 'Signed in';
         console.log('=== MSAL User Account Info ===');
         console.log('Complete account object:', account);
         console.log('Name:', account.name);
@@ -40,8 +39,11 @@ export function updateMsalUi() {
         if (userInfo && userName && userEmail) {
             userName.textContent = account.name || 'User';
             userEmail.textContent = account.username || '';
-            userInfo.style.display = 'block';
+            userInfo.style.display = 'flex';
+            userInfo.classList.remove('msal-options-open');
         }
+        if (optionsPanel)
+            optionsPanel.style.display = 'none';
         if (!watchLaterTaskId) {
             initWatchLater().catch(e => console.error('Failed to init watch later:', e));
         }
@@ -52,10 +54,11 @@ export function updateMsalUi() {
     else {
         btn.textContent = 'Sign in';
         btn.style.color = '#8ecae6';
-        status.textContent = 'Signed out';
         if (userInfo) {
             userInfo.style.display = 'none';
         }
+        if (optionsPanel)
+            optionsPanel.style.display = 'flex';
     }
 }
 function showMsalError(error) {
