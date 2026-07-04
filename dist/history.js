@@ -132,16 +132,16 @@ function setCompactedHistory(compacted) {
 export function compactHistoryUpTo(index) {
     const history = getHistory();
     const eventsToCompact = history.slice(index);
-    const channelKey = (g) => g.author_id || g.author_url || g.author;
+    const compactable = eventsToCompact.filter(event => !!event.videoData.author_url);
+    const skipped = eventsToCompact.filter(event => !event.videoData.author_url);
     const existing = getCompactedHistory();
-    const channelGroups = (existing?.channels ?? []).reduce((acc, group) => ({ ...acc, [channelKey(group)]: { ...group, videos: [...group.videos] } }), {});
-    eventsToCompact.forEach(event => {
-        const key = channelKey(event.videoData);
+    const channelGroups = (existing?.channels ?? []).reduce((acc, group) => group.author_url ? { ...acc, [group.author_url]: { ...group, videos: [...group.videos] } } : acc, {});
+    compactable.forEach(event => {
+        const key = event.videoData.author_url;
         if (!channelGroups[key]) {
             channelGroups[key] = {
                 author: event.videoData.author,
                 author_url: event.videoData.author_url,
-                author_id: event.videoData.author_id,
                 videos: []
             };
         }
@@ -166,7 +166,7 @@ export function compactHistoryUpTo(index) {
         channels: deduped.sort((a, b) => b.videos.length - a.videos.length)
     };
     setCompactedHistory(compacted);
-    const remainingHistory = history.slice(0, index);
+    const remainingHistory = [...history.slice(0, index), ...skipped];
     localStorage.setItem("history", JSON.stringify(remainingHistory));
     renderHistory();
     if (isHistorySyncReady()) {

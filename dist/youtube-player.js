@@ -308,15 +308,14 @@ export async function apply_vid(vid) {
         setTimeout(async () => {
             if (!player)
                 return;
-            const videoData = player.getVideoData();
-            try {
-                const details = await resolveChannelDetails(videoData.video_id);
-                if (details?.author_url)
-                    videoData.author_url = details.author_url;
-            }
-            catch {
-                // ignore
-            }
+            const raw = player.getVideoData();
+            const details = await resolveChannelDetails(raw.video_id);
+            const videoData = {
+                video_id: raw.video_id,
+                title: raw.title,
+                author: raw.author,
+                ...(details.author_url ? { author_url: details.author_url } : {})
+            };
             const savedPosition = localStorage.getItem("vid-" + videoData.video_id);
             const currentTime = savedPosition ? parseFloat(savedPosition) : 0;
             const duration = player.getDuration() || 0;

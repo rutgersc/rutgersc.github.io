@@ -1,4 +1,4 @@
-import { extractYouTubeId, extractTimestamp, formatTime, resolveChannelDetails, VideoProgress } from './video-utils.js';
+import { extractYouTubeId, extractTimestamp, formatTime, resolveChannelDetails, VideoProgress, VideoData } from './video-utils.js';
 import { addToHistory, updateHistoryProgress } from './history.js';
 import { isVideoInWatchLater, removeFromWatchLater, loadWatchLater } from './watch-later.js';
 import { fetchChapters, renderChapters, highlightCurrentChapter, type Chapter } from './chapters.js';
@@ -411,13 +411,14 @@ export async function apply_vid(vid: string): Promise<void> {
 
     setTimeout(async () => {
       if (!player) return;
-      const videoData = player.getVideoData();
-      try {
-        const details = await resolveChannelDetails(videoData.video_id);
-        if (details?.author_url) (videoData as { author_url?: string }).author_url = details.author_url;
-      } catch {
-        // ignore
-      }
+      const raw = player.getVideoData();
+      const details = await resolveChannelDetails(raw.video_id);
+      const videoData: VideoData = {
+        video_id: raw.video_id,
+        title: raw.title,
+        author: raw.author,
+        ...(details.author_url ? { author_url: details.author_url } : {})
+      };
 
       const savedPosition = localStorage.getItem("vid-" + videoData.video_id);
       const currentTime = savedPosition ? parseFloat(savedPosition) : 0;
