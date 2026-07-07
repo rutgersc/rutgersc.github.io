@@ -98,7 +98,7 @@ function getPosition() {
     return Number(localStorage.getItem("vid-" + vid)) || 0;
 }
 function updateTimeline() {
-    if (!player || !timeline || !timelineTimeSpan || !timelineDragSpan || !timelineControls)
+    if (!player || typeof player.getDuration !== "function" || !timeline || !timelineTimeSpan || !timelineDragSpan || !timelineControls)
         return;
     const duration = player.getDuration();
     const current = player.getCurrentTime();

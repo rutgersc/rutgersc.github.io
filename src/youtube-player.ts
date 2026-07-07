@@ -193,7 +193,7 @@ function getPosition(): number {
 }
 
 function updateTimeline(): void {
-  if (!player || !timeline || !timelineTimeSpan || !timelineDragSpan || !timelineControls) return;
+  if (!player || typeof player.getDuration !== "function" || !timeline || !timelineTimeSpan || !timelineDragSpan || !timelineControls) return;
   const duration = player.getDuration();
   const current = player.getCurrentTime();
   if (duration > 0) {
