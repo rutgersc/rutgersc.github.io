@@ -1,4 +1,4 @@
-import { renderVideoItem, renderCompactedSection } from './ui.js';
+import { renderVideoItem, renderChannelGroups } from './ui.js';
 import { scheduleSyncToTodo, syncHistoryNow, isHistorySyncReady } from './history-sync.js';
 import type { VideoData, VideoProgress } from './video-utils.js';
 
@@ -118,40 +118,104 @@ export function updateHistoryProgress(videoId: string, currentTime: number, dura
   }
 }
 
+export type HistoryView = "list" | "grouped";
+
+export function getHistoryView(): HistoryView {
+  return localStorage.getItem("history-view") === "grouped" ? "grouped" : "list";
+}
+
+function setHistoryView(view: HistoryView): void {
+  localStorage.setItem("history-view", view);
+  renderHistory();
+}
+
+export function groupByChannel(history: HistoryEntry[]): ChannelGroup[] {
+  const groups = history.reduce((acc, entry) => {
+    const vd = entry.videoData;
+    const key = vd.author_url || vd.author || vd.video_id;
+    const group = acc[key] ?? (acc[key] = { author: vd.author, author_url: vd.author_url, videos: [] });
+    group.videos.push({ videoData: vd, dateViewed: entry.dateViewed, wasWatchLater: entry.wasWatchLater });
+    return acc;
+  }, {} as Record<string, ChannelGroup>);
+
+  return Object.values(groups)
+    .map(group => ({ ...group, videos: [...group.videos].sort((a, b) => (a.dateViewed > b.dateViewed ? -1 : 1)) }))
+    .sort((a, b) => b.videos.length - a.videos.length);
+}
+
+const HISTORY_WARN_THRESHOLD = 250;
+
 export function renderHistory(): void {
   const history_list = document.getElementById("history_list");
   if (!history_list) return;
 
   history_list.innerHTML = "";
   const history = getHistory();
-  const compacted = getCompactedHistory();
-  console.log("renderHistory", history);
+  const view = getHistoryView();
 
-  history.forEach(({ videoData, dateViewed, wasWatchLater, progress }, index) => {
-    const listItem = renderVideoItem(videoData, dateViewed, {
-      onRemove: (videoId: string) => {
-        const history = getHistory();
-        const filtered = history.filter(item => item.videoData.video_id !== videoId);
-        localStorage.setItem("history", JSON.stringify(filtered));
-        renderHistory();
-        if (isHistorySyncReady()) {
-          syncHistoryNow();
-        }
-      },
-      wasWatchLater: wasWatchLater || false,
-      progress: progress || null,
-      showCompactButton: true,
-      onCompact: () => {
-        compactHistoryUpTo(index + 1);
-      }
-    });
-    history_list.appendChild(listItem);
-  });
+  const renderHistoryControls = (): HTMLDivElement => {
+    const bar = document.createElement("div");
+    bar.style.cssText = "display:flex;gap:8px;justify-content:center;align-items:center;flex-wrap:wrap;margin:0 auto 12px auto;max-width:480px;";
 
-  if (compacted) {
-    const compactedSection = renderCompactedSection(compacted);
-    history_list.appendChild(compactedSection);
+    const makeToggle = (label: string, value: HistoryView): HTMLButtonElement => {
+      const btn = document.createElement("button");
+      const active = view === value;
+      btn.textContent = label;
+      btn.style.cssText = `background:${active ? "#2d6a4f" : "#232323"};color:${active ? "#fff" : "#8ecae6"};border:1px solid #333;border-radius:6px;padding:6px 14px;cursor:pointer;font-weight:bold;`;
+      btn.onclick = () => setHistoryView(value);
+      return btn;
+    };
+
+    const count = document.createElement("span");
+    count.textContent = `${history.length} event${history.length !== 1 ? "s" : ""}`;
+    count.style.cssText = "color:#bbb;font-size:0.9rem;margin-right:4px;";
+    bar.appendChild(count);
+
+    bar.appendChild(makeToggle("List", "list"));
+    bar.appendChild(makeToggle("By channel", "grouped"));
+
+    const compacted = getCompactedHistory();
+    if (compacted) {
+      const count = compacted.channels.reduce((n, ch) => n + ch.videos.length, 0);
+      const importBtn = document.createElement("button");
+      importBtn.textContent = `⬆ Import compacted (${count})`;
+      importBtn.title = "One-time: merge old compacted history back into the log";
+      importBtn.style.cssText = "background:#4a5568;color:#fff;border:none;border-radius:6px;padding:6px 14px;cursor:pointer;";
+      importBtn.onclick = () => importCompactedIntoHistory();
+      bar.appendChild(importBtn);
+    }
+
+    return bar;
+  };
+
+  history_list.appendChild(renderHistoryControls());
+
+  if (history.length >= HISTORY_WARN_THRESHOLD) {
+    const warn = document.createElement("div");
+    warn.textContent = `⚠ ${history.length} events stored — history is getting large; consider clearing old entries.`;
+    warn.style.cssText = "color:#ffd166;background:#2a2410;border:1px solid #5a4a1a;border-radius:6px;padding:8px 14px;margin:0 auto 12px auto;max-width:480px;text-align:center;font-size:0.9rem;";
+    history_list.appendChild(warn);
   }
+
+  if (view === "grouped") {
+    history_list.appendChild(renderChannelGroups(groupByChannel(history)));
+    return;
+  }
+
+  const removeEntry = (videoId: string): void => {
+    const filtered = getHistory().filter(item => item.videoData.video_id !== videoId);
+    localStorage.setItem("history", JSON.stringify(filtered));
+    renderHistory();
+    if (isHistorySyncReady()) syncHistoryNow();
+  };
+
+  history.forEach(({ videoData, dateViewed, wasWatchLater, progress }) => {
+    history_list.appendChild(renderVideoItem(videoData, dateViewed, {
+      onRemove: removeEntry,
+      wasWatchLater: wasWatchLater || false,
+      progress: progress || null
+    }));
+  });
 }
 
 export function clearHistory(): void {
@@ -187,73 +251,27 @@ export function getCompactedHistory(): CompactedHistory | null {
   return JSON.parse(localStorage.getItem("compactedHistory") || "null") as CompactedHistory | null;
 }
 
-function setCompactedHistory(compacted: CompactedHistory): void {
-  localStorage.setItem("compactedHistory", JSON.stringify(compacted));
-}
+export function importCompactedIntoHistory(): void {
+  const compacted = getCompactedHistory();
+  if (!compacted) return;
 
-export function compactHistoryUpTo(index: number): void {
-  const history = getHistory();
-
-  const eventsToCompact = history.slice(index);
-
-  const compactable = eventsToCompact.filter(event => !!event.videoData.author_url);
-  const skipped = eventsToCompact.filter(event => !event.videoData.author_url);
-
-  const existing = getCompactedHistory();
-  const channelGroups: Record<string, ChannelGroup> = (existing?.channels ?? []).reduce(
-    (acc, group) => group.author_url ? { ...acc, [group.author_url]: { ...group, videos: [...group.videos] } } : acc,
-    {} as Record<string, ChannelGroup>
+  const imported: HistoryEntry[] = compacted.channels.flatMap(ch =>
+    ch.videos.map(v => ({ videoData: v.videoData, dateViewed: v.dateViewed, wasWatchLater: v.wasWatchLater ?? false }))
   );
 
-  compactable.forEach(event => {
-    const key = event.videoData.author_url!;
-    if (!channelGroups[key]) {
-      channelGroups[key] = {
-        author: event.videoData.author,
-        author_url: event.videoData.author_url,
-        videos: []
-      };
-    }
-    channelGroups[key].videos.push({
-      videoData: event.videoData,
-      dateViewed: event.dateViewed,
-      wasWatchLater: event.wasWatchLater
-    });
-  });
+  const byId = [...getHistory(), ...imported].reduce((acc, entry) => {
+    const prev = acc[entry.videoData.video_id];
+    if (!prev || entry.dateViewed > prev.dateViewed) acc[entry.videoData.video_id] = entry;
+    return acc;
+  }, {} as Record<string, HistoryEntry>);
 
-  const deduped = Object.values(channelGroups).map(group => ({
-    ...group,
-    videos: Object.values(
-      group.videos.reduce((acc, v) => {
-        const prev = acc[v.videoData.video_id];
-        if (!prev || v.dateViewed > prev.dateViewed) {
-          acc[v.videoData.video_id] = v;
-        }
-        return acc;
-      }, {} as Record<string, (typeof group.videos)[number]>)
-    )
-  }));
+  const merged = Object.values(byId).sort((a, b) => (a.dateViewed > b.dateViewed ? -1 : 1));
 
-  const compacted: CompactedHistory = {
-    compactedAt: new Date().toISOString(),
-    channels: deduped.sort((a, b) => b.videos.length - a.videos.length)
-  };
-
-  setCompactedHistory(compacted);
-
-  const remainingHistory = [...history.slice(0, index), ...skipped];
-  localStorage.setItem("history", JSON.stringify(remainingHistory));
-
-  renderHistory();
-
-  if (isHistorySyncReady()) {
-    syncHistoryNow();
-  }
-}
-
-export function clearCompactedHistory(): void {
+  localStorage.setItem("history", JSON.stringify(merged));
   localStorage.removeItem("compactedHistory");
   renderHistory();
+
+  if (isHistorySyncReady()) syncHistoryNow();
 }
 
 export function dumpAllEvents(): void {

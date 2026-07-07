@@ -29,7 +29,7 @@ const renderProgressBar = (currentTime, duration, percentage) => {
     return bar;
 };
 export function renderVideoItem(videoData, dateViewed, options = {}) {
-    const { onRemove = null, removeButtonText = '🗑️', removeButtonTitle = 'Remove', onPlay = null, wasWatchLater = false, playUrl = null, onCompact = null, showCompactButton = false, progress = null } = options;
+    const { onRemove = null, removeButtonText = '🗑️', removeButtonTitle = 'Remove', onPlay = null, wasWatchLater = false, playUrl = null, progress = null } = options;
     const listItem = document.createElement("li");
     listItem.style.background = "#232323";
     listItem.style.borderRadius = "8px";
@@ -151,24 +151,6 @@ export function renderVideoItem(videoData, dateViewed, options = {}) {
         removeButton.onmouseleave = () => btn.style.background = "#8b0000";
         removeButton.onclick = () => onRemove(videoData.video_id);
     }
-    let compactButton = null;
-    if (showCompactButton && onCompact) {
-        compactButton = document.createElement("button");
-        compactButton.textContent = "📦";
-        compactButton.title = "Compact history up to this point";
-        compactButton.style.background = "#4a5568";
-        compactButton.style.color = "#fff";
-        compactButton.style.border = "none";
-        compactButton.style.borderRadius = "4px";
-        compactButton.style.padding = "4px 10px";
-        compactButton.style.cursor = "pointer";
-        compactButton.style.fontSize = "1.1em";
-        compactButton.style.marginLeft = "8px";
-        const btn = compactButton;
-        compactButton.onmouseenter = () => btn.style.background = "#5a6678";
-        compactButton.onmouseleave = () => btn.style.background = "#4a5568";
-        compactButton.onclick = () => onCompact();
-    }
     const expandBtn = document.createElement("button");
     expandBtn.textContent = "▾";
     expandBtn.title = "Expand channel videos";
@@ -198,8 +180,6 @@ export function renderVideoItem(videoData, dateViewed, options = {}) {
     rightGroup.appendChild(playButton);
     if (removeButton)
         rightGroup.appendChild(removeButton);
-    if (compactButton)
-        rightGroup.appendChild(compactButton);
     rightGroup.appendChild(expandBtn);
     topRow.appendChild(rightGroup);
     const titleP = document.createElement("span");
@@ -349,7 +329,7 @@ export function renderVideoItem(videoData, dateViewed, options = {}) {
     listItem.appendChild(expandContainer);
     return listItem;
 }
-export function renderCompactedSection(compacted) {
+export function renderChannelGroups(channels) {
     const section = document.createElement("div");
     section.style.background = "#1a1a1a";
     section.style.borderRadius = "8px";
@@ -358,25 +338,7 @@ export function renderCompactedSection(compacted) {
     section.style.maxWidth = "480px";
     section.style.boxShadow = "0 2px 8px rgba(0,0,0,0.12)";
     section.style.border = "2px solid #4a5568";
-    const header = document.createElement("div");
-    header.style.display = "flex";
-    header.style.justifyContent = "space-between";
-    header.style.alignItems = "center";
-    header.style.marginBottom = "12px";
-    const title = document.createElement("h4");
-    title.textContent = "Compacted History";
-    title.style.color = "#8ecae6";
-    title.style.margin = "0";
-    title.style.fontSize = "1.1rem";
-    const compactedDate = document.createElement("span");
-    compactedDate.textContent = getTimeAgo(new Date(compacted.compactedAt));
-    compactedDate.style.color = "#888";
-    compactedDate.style.fontSize = "0.85rem";
-    compactedDate.style.fontStyle = "italic";
-    header.appendChild(title);
-    header.appendChild(compactedDate);
-    section.appendChild(header);
-    compacted.channels.forEach(channel => {
+    channels.forEach(channel => {
         const channelItem = document.createElement("div");
         channelItem.style.marginBottom = "12px";
         channelItem.style.background = "#232323";
