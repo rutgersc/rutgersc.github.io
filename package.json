@@ -7,7 +7,7 @@
     "start": "npm run dev",
     "build": "node scripts/update-version.js && tsc",
     "watch": "tsc --watch",
-    "dev": "npm run build && http-server -p 8000 -o youtube.html"
+    "dev": "npm run build && http-server -p 8000 -a localhost -o youtube.html"
   },
   "devDependencies": {
     "http-server": "^14.1.1",
