@@ -144,6 +144,8 @@ export function groupByChannel(history: HistoryEntry[]): ChannelGroup[] {
 }
 
 const HISTORY_WARN_THRESHOLD = 250;
+const FLAT_PAGE_SIZE = 100;
+let flatRenderLimit = FLAT_PAGE_SIZE;
 
 export function renderHistory(): void {
   const history_list = document.getElementById("history_list");
@@ -209,13 +211,21 @@ export function renderHistory(): void {
     if (isHistorySyncReady()) syncHistoryNow();
   };
 
-  history.forEach(({ videoData, dateViewed, wasWatchLater, progress }) => {
+  history.slice(0, flatRenderLimit).forEach(({ videoData, dateViewed, wasWatchLater, progress }) => {
     history_list.appendChild(renderVideoItem(videoData, dateViewed, {
       onRemove: removeEntry,
       wasWatchLater: wasWatchLater || false,
       progress: progress || null
     }));
   });
+
+  if (history.length > flatRenderLimit) {
+    const moreBtn = document.createElement("button");
+    moreBtn.textContent = `Show more (${history.length - flatRenderLimit} older)`;
+    moreBtn.style.cssText = "display:block;width:100%;max-width:480px;margin:12px auto;padding:10px;background:#232323;color:#8ecae6;border:1px solid #333;border-radius:8px;font-weight:bold;cursor:pointer;";
+    moreBtn.onclick = () => { flatRenderLimit += FLAT_PAGE_SIZE; renderHistory(); };
+    history_list.appendChild(moreBtn);
+  }
 }
 
 export function clearHistory(): void {
