@@ -53,8 +53,7 @@ export async function initHistorySync() {
     return initHistoryPromise;
 }
 function historyToBody(history) {
-    const limitedHistory = history.slice(0, 200);
-    return limitedHistory.map(entry => JSON.stringify(entry)).join('\n');
+    return history.map(entry => JSON.stringify(entry)).join('\n');
 }
 function bodyToHistory(body) {
     if (!body || body.trim() === '') {

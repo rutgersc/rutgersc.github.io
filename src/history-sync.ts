@@ -62,8 +62,7 @@ export async function initHistorySync(): Promise<void> {
 }
 
 function historyToBody(history: HistoryEntry[]): string {
-  const limitedHistory = history.slice(0, 200);
-  return limitedHistory.map(entry => JSON.stringify(entry)).join('\n');
+  return history.map(entry => JSON.stringify(entry)).join('\n');
 }
 
 function bodyToHistory(body: string): HistoryEntry[] {
