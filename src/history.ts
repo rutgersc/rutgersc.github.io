@@ -1,5 +1,6 @@
 import { renderVideoItem, renderChannelGroups } from './ui.js';
 import { scheduleSyncToTodo, syncHistoryNow, isHistorySyncReady } from './history-sync.js';
+import { resolveChannelDetails } from './video-utils.js';
 import type { VideoData, VideoProgress } from './video-utils.js';
 
 export interface HistoryEntry {
@@ -129,7 +130,18 @@ function setHistoryView(view: HistoryView): void {
   renderHistory();
 }
 
-export function groupByChannel(history: HistoryEntry[]): ChannelGroup[] {
+export type GroupSort = "count" | "recent";
+
+export function getGroupSort(): GroupSort {
+  return localStorage.getItem("history-group-sort") === "recent" ? "recent" : "count";
+}
+
+function setGroupSort(sort: GroupSort): void {
+  localStorage.setItem("history-group-sort", sort);
+  renderHistory();
+}
+
+export function groupByChannel(history: HistoryEntry[], sort: GroupSort = "count"): ChannelGroup[] {
   const groups = history.reduce((acc, entry) => {
     const vd = entry.videoData;
     const key = vd.author_url || vd.author || vd.video_id;
@@ -138,9 +150,12 @@ export function groupByChannel(history: HistoryEntry[]): ChannelGroup[] {
     return acc;
   }, {} as Record<string, ChannelGroup>);
 
-  return Object.values(groups)
-    .map(group => ({ ...group, videos: [...group.videos].sort((a, b) => (a.dateViewed > b.dateViewed ? -1 : 1)) }))
-    .sort((a, b) => b.videos.length - a.videos.length);
+  const grouped = Object.values(groups)
+    .map(group => ({ ...group, videos: [...group.videos].sort((a, b) => (a.dateViewed > b.dateViewed ? -1 : 1)) }));
+
+  return sort === "recent"
+    ? grouped.sort((a, b) => (a.videos[0].dateViewed > b.videos[0].dateViewed ? -1 : 1))
+    : grouped.sort((a, b) => b.videos.length - a.videos.length);
 }
 
 const HISTORY_WARN_THRESHOLD = 250;
@@ -159,12 +174,11 @@ export function renderHistory(): void {
     const bar = document.createElement("div");
     bar.style.cssText = "display:flex;gap:8px;justify-content:center;align-items:center;flex-wrap:wrap;margin:0 auto 12px auto;max-width:480px;";
 
-    const makeToggle = (label: string, value: HistoryView): HTMLButtonElement => {
+    const makePill = (label: string, active: boolean, onClick: () => void): HTMLButtonElement => {
       const btn = document.createElement("button");
-      const active = view === value;
       btn.textContent = label;
       btn.style.cssText = `background:${active ? "#2d6a4f" : "#232323"};color:${active ? "#fff" : "#8ecae6"};border:1px solid #333;border-radius:6px;padding:6px 14px;cursor:pointer;font-weight:bold;`;
-      btn.onclick = () => setHistoryView(value);
+      btn.onclick = onClick;
       return btn;
     };
 
@@ -173,8 +187,18 @@ export function renderHistory(): void {
     count.style.cssText = "color:#bbb;font-size:0.9rem;margin-right:4px;";
     bar.appendChild(count);
 
-    bar.appendChild(makeToggle("List", "list"));
-    bar.appendChild(makeToggle("By channel", "grouped"));
+    bar.appendChild(makePill("List", view === "list", () => setHistoryView("list")));
+    bar.appendChild(makePill("By channel", view === "grouped", () => setHistoryView("grouped")));
+
+    if (view === "grouped") {
+      const sort = getGroupSort();
+      const sortLabel = document.createElement("span");
+      sortLabel.textContent = "sort:";
+      sortLabel.style.cssText = "color:#888;font-size:0.85rem;margin-left:4px;";
+      bar.appendChild(sortLabel);
+      bar.appendChild(makePill("count", sort === "count", () => setGroupSort("count")));
+      bar.appendChild(makePill("recent", sort === "recent", () => setGroupSort("recent")));
+    }
 
     const compacted = getCompactedHistory();
     if (compacted) {
@@ -200,7 +224,7 @@ export function renderHistory(): void {
   }
 
   if (view === "grouped") {
-    history_list.appendChild(renderChannelGroups(groupByChannel(history)));
+    history_list.appendChild(renderChannelGroups(groupByChannel(history, getGroupSort())));
     return;
   }
 
@@ -211,9 +235,26 @@ export function renderHistory(): void {
     if (isHistorySyncReady()) syncHistoryNow();
   };
 
+  const fixEntry = async (videoId: string): Promise<void> => {
+    const details = await resolveChannelDetails(videoId);
+    const current = getHistory();
+    const entry = current.find(item => item.videoData.video_id === videoId);
+    if (!entry) return;
+    entry.videoData = {
+      ...entry.videoData,
+      title: entry.videoData.title || details.title || "",
+      author: entry.videoData.author || details.author || "",
+      ...(details.author_url ? { author_url: details.author_url } : {})
+    };
+    localStorage.setItem("history", JSON.stringify(current));
+    renderHistory();
+    if (isHistorySyncReady()) syncHistoryNow();
+  };
+
   history.slice(0, flatRenderLimit).forEach(({ videoData, dateViewed, wasWatchLater, progress }) => {
     history_list.appendChild(renderVideoItem(videoData, dateViewed, {
       onRemove: removeEntry,
+      onFix: () => fixEntry(videoData.video_id),
       wasWatchLater: wasWatchLater || false,
       progress: progress || null
     }));

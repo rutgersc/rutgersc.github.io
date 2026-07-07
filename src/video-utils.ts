@@ -15,6 +15,8 @@ export interface VideoProgress {
 
 interface ChannelDetails {
   author_url: string | null;
+  title: string | null;
+  author: string | null;
 }
 
 export interface ChannelVideo {
@@ -106,19 +108,25 @@ export async function resolveChannelDetails(videoId: string): Promise<ChannelDet
   try {
     const cacheKey = `channelDetails:${videoId}`;
     const cached = localStorage.getItem(cacheKey);
-    if (cached) return JSON.parse(cached) as ChannelDetails;
+    if (cached) {
+      const parsed = JSON.parse(cached) as ChannelDetails;
+      if (parsed.title !== undefined) return parsed;
+    }
     const res = await fetch(`https://noembed.com/embed?url=https://www.youtube.com/watch?v=${videoId}`);
     if (res.ok) {
       const data = await res.json();
-      const author_url = data.author_url || null;
-      const result: ChannelDetails = { author_url };
+      const result: ChannelDetails = {
+        author_url: data.author_url || null,
+        title: data.title || null,
+        author: data.author_name || null
+      };
       localStorage.setItem(cacheKey, JSON.stringify(result));
       return result;
     }
   } catch (e) {
     console.warn("resolveChannelDetails error", e);
   }
-  return { author_url: null };
+  return { author_url: null, title: null, author: null };
 }
 
 export const YOUTUBE_API_KEY = "AIzaSyDNjnKlfMnFODoLsJAl7B7HCn24AWN1tvQ";

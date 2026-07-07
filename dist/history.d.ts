@@ -24,7 +24,9 @@ export declare function addToHistory(videoData: VideoData, _name: string, wasWat
 export declare function updateHistoryProgress(videoId: string, currentTime: number, duration: number): void;
 export type HistoryView = "list" | "grouped";
 export declare function getHistoryView(): HistoryView;
-export declare function groupByChannel(history: HistoryEntry[]): ChannelGroup[];
+export type GroupSort = "count" | "recent";
+export declare function getGroupSort(): GroupSort;
+export declare function groupByChannel(history: HistoryEntry[], sort?: GroupSort): ChannelGroup[];
 export declare function renderHistory(): void;
 export declare function clearHistory(): void;
 export declare function getWatchedVideosIndex(): Map<string, {

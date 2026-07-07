@@ -13,6 +13,8 @@ export interface VideoProgress {
 }
 interface ChannelDetails {
     author_url: string | null;
+    title: string | null;
+    author: string | null;
 }
 export interface ChannelVideo {
     videoId: string;

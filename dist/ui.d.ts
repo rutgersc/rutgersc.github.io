@@ -7,6 +7,7 @@ export interface RenderOptions {
     onPlay?: ((videoId: string) => void) | null;
     wasWatchLater?: boolean;
     playUrl?: string | null;
+    onFix?: (() => void) | null;
     progress?: VideoProgress | null;
 }
 export declare function renderVideoItem(videoData: VideoData, dateViewed: string | null, options?: RenderOptions): HTMLLIElement;

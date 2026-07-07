@@ -11,6 +11,7 @@ export interface RenderOptions {
   onPlay?: ((videoId: string) => void) | null;
   wasWatchLater?: boolean;
   playUrl?: string | null;
+  onFix?: (() => void) | null;
   progress?: VideoProgress | null;
 }
 
@@ -47,6 +48,106 @@ const renderProgressBar = (currentTime: number, duration: number, percentage: nu
   return bar;
 };
 
+const SHORTS_MAX_SECONDS = 60;
+
+const renderChannelVideoItem = (video: ChannelVideo, watchedIndex: Map<string, { dateViewed: string }>): HTMLDivElement => {
+  const isWatched = watchedIndex.has(video.videoId);
+  const isShort = video.durationSeconds != null && video.durationSeconds <= SHORTS_MAX_SECONDS;
+
+  const item = document.createElement("div");
+  item.style.display = "flex";
+  item.style.flexDirection = "column";
+  item.style.padding = "6px 0";
+  item.style.borderBottom = "1px solid #333";
+  if (isShort) item.style.opacity = "0.45";
+
+  const row = document.createElement("div");
+  row.style.display = "flex";
+  row.style.alignItems = "center";
+  row.style.justifyContent = "space-between";
+
+  const info = document.createElement("div");
+  info.style.flex = "1";
+  info.style.minWidth = "0";
+  info.style.marginRight = "10px";
+
+  const title = document.createElement("div");
+  title.style.color = "#fff";
+  title.style.fontSize = "0.85rem";
+  title.style.whiteSpace = "nowrap";
+  title.style.overflow = "hidden";
+  title.style.textOverflow = "ellipsis";
+  title.style.marginBottom = "2px";
+  title.title = video.title;
+  if (isWatched) {
+    const check = document.createElement("span");
+    check.textContent = "✓ ";
+    check.style.color = "#52b788";
+    title.appendChild(check);
+    title.appendChild(document.createTextNode(video.title));
+  } else {
+    title.textContent = video.title;
+  }
+
+  const meta = document.createElement("div");
+  meta.style.color = "#888";
+  meta.style.fontSize = "0.75rem";
+  meta.style.display = "flex";
+  meta.style.gap = "8px";
+  if (video.published) {
+    const date = document.createElement("span");
+    date.textContent = getTimeAgo(new Date(video.published));
+    meta.appendChild(date);
+  }
+  if (video.durationSeconds != null) {
+    const dur = document.createElement("span");
+    dur.textContent = formatTime(video.durationSeconds);
+    dur.style.color = "#8ecae6";
+    meta.appendChild(dur);
+  }
+  if (isShort) {
+    const shortTag = document.createElement("span");
+    shortTag.textContent = "Short";
+    shortTag.style.fontStyle = "italic";
+    meta.appendChild(shortTag);
+  }
+
+  info.appendChild(title);
+  info.appendChild(meta);
+
+  const playBtn = document.createElement("button");
+  playBtn.textContent = "▶️";
+  playBtn.title = "Play";
+  playBtn.style.background = "#2d6a4f";
+  playBtn.style.color = "#fff";
+  playBtn.style.border = "none";
+  playBtn.style.borderRadius = "4px";
+  playBtn.style.padding = "4px 8px";
+  playBtn.style.cursor = "pointer";
+  playBtn.style.fontSize = "0.9em";
+  playBtn.style.flexShrink = "0";
+  playBtn.onmouseenter = () => playBtn.style.background = "#40916c";
+  playBtn.onmouseleave = () => playBtn.style.background = "#2d6a4f";
+  playBtn.onclick = () => apply_input_vid(video.videoId);
+
+  row.appendChild(info);
+  row.appendChild(playBtn);
+  item.appendChild(row);
+
+  if (isWatched) {
+    const saved = localStorage.getItem("vid-" + video.videoId);
+    if (saved && video.durationSeconds) {
+      const currentTime = parseFloat(saved);
+      if (currentTime > 0) {
+        const percentage = (currentTime / video.durationSeconds) * 100;
+        item.appendChild(renderProgressBar(currentTime, video.durationSeconds, percentage));
+      }
+    }
+  }
+
+  return item;
+};
+
 export function renderVideoItem(videoData: VideoData, dateViewed: string | null, options: RenderOptions = {}): HTMLLIElement {
   const {
     onRemove = null,
@@ -55,6 +156,7 @@ export function renderVideoItem(videoData: VideoData, dateViewed: string | null,
     onPlay = null,
     wasWatchLater = false,
     playUrl = null,
+    onFix = null,
     progress = null
   } = options;
 
@@ -189,6 +291,15 @@ export function renderVideoItem(videoData: VideoData, dateViewed: string | null,
     removeButton.onclick = () => onRemove(videoData.video_id);
   }
 
+  let fixButton: HTMLButtonElement | null = null;
+  if (!videoData.title && onFix) {
+    fixButton = document.createElement("button");
+    fixButton.textContent = "🔧";
+    fixButton.title = "Fetch title/author from noembed";
+    fixButton.style.cssText = "background:#4a5568;color:#fff;border:none;border-radius:4px;padding:4px 10px;cursor:pointer;font-size:1.1em;margin-left:8px;";
+    fixButton.onclick = () => onFix();
+  }
+
   const expandBtn = document.createElement("button");
   expandBtn.textContent = "▾";
   expandBtn.title = "Expand channel videos";
@@ -219,6 +330,7 @@ export function renderVideoItem(videoData: VideoData, dateViewed: string | null,
   const rightGroup = document.createElement("span");
   rightGroup.appendChild(playButton);
   if (removeButton) rightGroup.appendChild(removeButton);
+  if (fixButton) rightGroup.appendChild(fixButton);
   rightGroup.appendChild(expandBtn);
   topRow.appendChild(rightGroup);
 
@@ -284,97 +396,7 @@ export function renderVideoItem(videoData: VideoData, dateViewed: string | null,
 
       const watchedIndex = getWatchedVideosIndex();
 
-      const renderChannelVideoItem = (video: ChannelVideo): HTMLDivElement => {
-        const isWatched = watchedIndex.has(video.videoId);
-
-        const item = document.createElement("div");
-        item.style.display = "flex";
-        item.style.flexDirection = "column";
-        item.style.padding = "6px 0";
-        item.style.borderBottom = "1px solid #333";
-
-        const row = document.createElement("div");
-        row.style.display = "flex";
-        row.style.alignItems = "center";
-        row.style.justifyContent = "space-between";
-
-        const info = document.createElement("div");
-        info.style.flex = "1";
-        info.style.minWidth = "0";
-        info.style.marginRight = "10px";
-
-        const title = document.createElement("div");
-        title.style.color = "#fff";
-        title.style.fontSize = "0.85rem";
-        title.style.whiteSpace = "nowrap";
-        title.style.overflow = "hidden";
-        title.style.textOverflow = "ellipsis";
-        title.style.marginBottom = "2px";
-        title.title = video.title;
-        if (isWatched) {
-          const check = document.createElement("span");
-          check.textContent = "✓ ";
-          check.style.color = "#52b788";
-          title.appendChild(check);
-          title.appendChild(document.createTextNode(video.title));
-        } else {
-          title.textContent = video.title;
-        }
-
-        const meta = document.createElement("div");
-        meta.style.color = "#888";
-        meta.style.fontSize = "0.75rem";
-        meta.style.display = "flex";
-        meta.style.gap = "8px";
-        if (video.published) {
-          const date = document.createElement("span");
-          date.textContent = getTimeAgo(new Date(video.published));
-          meta.appendChild(date);
-        }
-        if (video.durationSeconds != null) {
-          const dur = document.createElement("span");
-          dur.textContent = formatTime(video.durationSeconds);
-          dur.style.color = "#8ecae6";
-          meta.appendChild(dur);
-        }
-
-        info.appendChild(title);
-        info.appendChild(meta);
-
-        const playBtn = document.createElement("button");
-        playBtn.textContent = "▶️";
-        playBtn.title = "Play";
-        playBtn.style.background = "#2d6a4f";
-        playBtn.style.color = "#fff";
-        playBtn.style.border = "none";
-        playBtn.style.borderRadius = "4px";
-        playBtn.style.padding = "4px 8px";
-        playBtn.style.cursor = "pointer";
-        playBtn.style.fontSize = "0.9em";
-        playBtn.style.flexShrink = "0";
-        playBtn.onmouseenter = () => playBtn.style.background = "#40916c";
-        playBtn.onmouseleave = () => playBtn.style.background = "#2d6a4f";
-        playBtn.onclick = () => apply_input_vid(video.videoId);
-
-        row.appendChild(info);
-        row.appendChild(playBtn);
-        item.appendChild(row);
-
-        if (isWatched) {
-          const saved = localStorage.getItem("vid-" + video.videoId);
-          if (saved && video.durationSeconds) {
-            const currentTime = parseFloat(saved);
-            if (currentTime > 0) {
-              const percentage = (currentTime / video.durationSeconds) * 100;
-              item.appendChild(renderProgressBar(currentTime, video.durationSeconds, percentage));
-            }
-          }
-        }
-
-        return item;
-      };
-
-      videos.forEach(video => expandContainer.appendChild(renderChannelVideoItem(video)));
+      videos.forEach(video => expandContainer.appendChild(renderChannelVideoItem(video, watchedIndex)));
 
     } catch (e) {
       console.warn("Failed to fetch channel videos", e);
@@ -589,97 +611,7 @@ export function renderChannelGroups(channels: ChannelGroup[]): HTMLDivElement {
           status.style.display = "none";
           const watchedIndex = getWatchedVideosIndex();
 
-          const renderChannelVideoItem = (video: ChannelVideo): HTMLDivElement => {
-            const isWatched = watchedIndex.has(video.videoId);
-
-            const item = document.createElement("div");
-            item.style.display = "flex";
-            item.style.flexDirection = "column";
-            item.style.padding = "6px 0";
-            item.style.borderBottom = "1px solid #333";
-
-            const row = document.createElement("div");
-            row.style.display = "flex";
-            row.style.alignItems = "center";
-            row.style.justifyContent = "space-between";
-
-            const info = document.createElement("div");
-            info.style.flex = "1";
-            info.style.minWidth = "0";
-            info.style.marginRight = "10px";
-
-            const title = document.createElement("div");
-            title.style.color = "#fff";
-            title.style.fontSize = "0.85rem";
-            title.style.whiteSpace = "nowrap";
-            title.style.overflow = "hidden";
-            title.style.textOverflow = "ellipsis";
-            title.style.marginBottom = "2px";
-            title.title = video.title;
-            if (isWatched) {
-              const check = document.createElement("span");
-              check.textContent = "✓ ";
-              check.style.color = "#52b788";
-              title.appendChild(check);
-              title.appendChild(document.createTextNode(video.title));
-            } else {
-              title.textContent = video.title;
-            }
-
-            const meta = document.createElement("div");
-            meta.style.color = "#888";
-            meta.style.fontSize = "0.75rem";
-            meta.style.display = "flex";
-            meta.style.gap = "8px";
-            if (video.published) {
-              const date = document.createElement("span");
-              date.textContent = getTimeAgo(new Date(video.published));
-              meta.appendChild(date);
-            }
-            if (video.durationSeconds != null) {
-              const dur = document.createElement("span");
-              dur.textContent = formatTime(video.durationSeconds);
-              dur.style.color = "#8ecae6";
-              meta.appendChild(dur);
-            }
-
-            info.appendChild(title);
-            info.appendChild(meta);
-
-            const playBtn = document.createElement("button");
-            playBtn.textContent = "▶️";
-            playBtn.title = "Play";
-            playBtn.style.background = "#2d6a4f";
-            playBtn.style.color = "#fff";
-            playBtn.style.border = "none";
-            playBtn.style.borderRadius = "4px";
-            playBtn.style.padding = "4px 8px";
-            playBtn.style.cursor = "pointer";
-            playBtn.style.fontSize = "0.9em";
-            playBtn.style.flexShrink = "0";
-            playBtn.onmouseenter = () => playBtn.style.background = "#40916c";
-            playBtn.onmouseleave = () => playBtn.style.background = "#2d6a4f";
-            playBtn.onclick = () => apply_input_vid(video.videoId);
-
-            row.appendChild(info);
-            row.appendChild(playBtn);
-            item.appendChild(row);
-
-            if (isWatched) {
-              const saved = localStorage.getItem("vid-" + video.videoId);
-              if (saved && video.durationSeconds) {
-                const currentTime = parseFloat(saved);
-                if (currentTime > 0) {
-                  const percentage = (currentTime / video.durationSeconds) * 100;
-                  item.appendChild(renderProgressBar(currentTime, video.durationSeconds, percentage));
-                }
-              }
-            }
-
-            return item;
-          };
-
-          videos.forEach(video => latestContainer.appendChild(renderChannelVideoItem(video)));
+          videos.forEach(video => latestContainer.appendChild(renderChannelVideoItem(video, watchedIndex)));
         }
       } catch (e) {
         console.warn("Failed to fetch channel videos", e);

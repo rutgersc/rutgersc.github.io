@@ -74,13 +74,19 @@ export async function resolveChannelDetails(videoId) {
     try {
         const cacheKey = `channelDetails:${videoId}`;
         const cached = localStorage.getItem(cacheKey);
-        if (cached)
-            return JSON.parse(cached);
+        if (cached) {
+            const parsed = JSON.parse(cached);
+            if (parsed.title !== undefined)
+                return parsed;
+        }
         const res = await fetch(`https://noembed.com/embed?url=https://www.youtube.com/watch?v=${videoId}`);
         if (res.ok) {
             const data = await res.json();
-            const author_url = data.author_url || null;
-            const result = { author_url };
+            const result = {
+                author_url: data.author_url || null,
+                title: data.title || null,
+                author: data.author_name || null
+            };
             localStorage.setItem(cacheKey, JSON.stringify(result));
             return result;
         }
@@ -88,7 +94,7 @@ export async function resolveChannelDetails(videoId) {
     catch (e) {
         console.warn("resolveChannelDetails error", e);
     }
-    return { author_url: null };
+    return { author_url: null, title: null, author: null };
 }
 export const YOUTUBE_API_KEY = "AIzaSyDNjnKlfMnFODoLsJAl7B7HCn24AWN1tvQ";
 const extractChannelId = (authorUrl, authorId) => {
