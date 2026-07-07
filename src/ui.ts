@@ -48,7 +48,7 @@ const renderProgressBar = (currentTime: number, duration: number, percentage: nu
   return bar;
 };
 
-const SHORTS_MAX_SECONDS = 60;
+const SHORTS_MAX_SECONDS = 60*3;
 
 const renderChannelVideoItem = (video: ChannelVideo, watchedIndex: Map<string, { dateViewed: string }>): HTMLDivElement => {
   const isWatched = watchedIndex.has(video.videoId);
@@ -146,6 +146,25 @@ const renderChannelVideoItem = (video: ChannelVideo, watchedIndex: Map<string, {
   }
 
   return item;
+};
+
+const CHANNEL_VIDEO_PAGE = 10;
+
+const renderChannelVideoList = (container: HTMLElement, videos: ChannelVideo[], watchedIndex: Map<string, { dateViewed: string }>): void => {
+  const moreBtn = document.createElement("button");
+  moreBtn.style.cssText = "display:block;width:100%;margin-top:8px;padding:8px;background:#2a2a2a;color:#8ecae6;border:1px solid #333;border-radius:6px;cursor:pointer;font-size:0.85rem;";
+
+  let shown = 0;
+  const showNext = (): void => {
+    videos.slice(shown, shown + CHANNEL_VIDEO_PAGE).forEach(v => container.insertBefore(renderChannelVideoItem(v, watchedIndex), moreBtn));
+    shown = Math.min(shown + CHANNEL_VIDEO_PAGE, videos.length);
+    if (shown >= videos.length) moreBtn.remove();
+    else moreBtn.textContent = `Load more (${videos.length - shown})`;
+  };
+
+  moreBtn.onclick = showNext;
+  container.appendChild(moreBtn);
+  showNext();
 };
 
 export function renderVideoItem(videoData: VideoData, dateViewed: string | null, options: RenderOptions = {}): HTMLLIElement {
@@ -383,7 +402,7 @@ export function renderVideoItem(videoData: VideoData, dateViewed: string | null,
     expandStatus.textContent = "Loading channel videos...";
 
     try {
-      const videos = await fetchChannelVideos(videoData.author_url, videoData.author_id, 10);
+      const videos = await fetchChannelVideos(videoData.author_url, videoData.author_id, 50);
 
       if (videos.length === 0) {
         expandStatus.textContent = "No videos found for this channel.";
@@ -396,7 +415,7 @@ export function renderVideoItem(videoData: VideoData, dateViewed: string | null,
 
       const watchedIndex = getWatchedVideosIndex();
 
-      videos.forEach(video => expandContainer.appendChild(renderChannelVideoItem(video, watchedIndex)));
+      renderChannelVideoList(expandContainer, videos, watchedIndex);
 
     } catch (e) {
       console.warn("Failed to fetch channel videos", e);
@@ -604,14 +623,14 @@ export function renderChannelGroups(channels: ChannelGroup[]): HTMLDivElement {
       latestContainer.appendChild(status);
 
       try {
-        const videos = await fetchChannelVideos(channel.author_url, channel.author_id, 10);
+        const videos = await fetchChannelVideos(channel.author_url, channel.author_id, 50);
         if (videos.length === 0) {
           status.textContent = "No videos found for this channel.";
         } else {
           status.style.display = "none";
           const watchedIndex = getWatchedVideosIndex();
 
-          videos.forEach(video => latestContainer.appendChild(renderChannelVideoItem(video, watchedIndex)));
+          renderChannelVideoList(latestContainer, videos, watchedIndex);
         }
       } catch (e) {
         console.warn("Failed to fetch channel videos", e);

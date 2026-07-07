@@ -28,7 +28,7 @@ const renderProgressBar = (currentTime, duration, percentage) => {
     bar.appendChild(text);
     return bar;
 };
-const SHORTS_MAX_SECONDS = 60;
+const SHORTS_MAX_SECONDS = 60 * 3;
 const renderChannelVideoItem = (video, watchedIndex) => {
     const isWatched = watchedIndex.has(video.videoId);
     const isShort = video.durationSeconds != null && video.durationSeconds <= SHORTS_MAX_SECONDS;
@@ -117,6 +117,23 @@ const renderChannelVideoItem = (video, watchedIndex) => {
         }
     }
     return item;
+};
+const CHANNEL_VIDEO_PAGE = 10;
+const renderChannelVideoList = (container, videos, watchedIndex) => {
+    const moreBtn = document.createElement("button");
+    moreBtn.style.cssText = "display:block;width:100%;margin-top:8px;padding:8px;background:#2a2a2a;color:#8ecae6;border:1px solid #333;border-radius:6px;cursor:pointer;font-size:0.85rem;";
+    let shown = 0;
+    const showNext = () => {
+        videos.slice(shown, shown + CHANNEL_VIDEO_PAGE).forEach(v => container.insertBefore(renderChannelVideoItem(v, watchedIndex), moreBtn));
+        shown = Math.min(shown + CHANNEL_VIDEO_PAGE, videos.length);
+        if (shown >= videos.length)
+            moreBtn.remove();
+        else
+            moreBtn.textContent = `Load more (${videos.length - shown})`;
+    };
+    moreBtn.onclick = showNext;
+    container.appendChild(moreBtn);
+    showNext();
 };
 export function renderVideoItem(videoData, dateViewed, options = {}) {
     const { onRemove = null, removeButtonText = '🗑️', removeButtonTitle = 'Remove', onPlay = null, wasWatchLater = false, playUrl = null, onFix = null, progress = null } = options;
@@ -323,7 +340,7 @@ export function renderVideoItem(videoData, dateViewed, options = {}) {
             return;
         expandStatus.textContent = "Loading channel videos...";
         try {
-            const videos = await fetchChannelVideos(videoData.author_url, videoData.author_id, 10);
+            const videos = await fetchChannelVideos(videoData.author_url, videoData.author_id, 50);
             if (videos.length === 0) {
                 expandStatus.textContent = "No videos found for this channel.";
                 channelVideosFetched = true;
@@ -332,7 +349,7 @@ export function renderVideoItem(videoData, dateViewed, options = {}) {
             expandStatus.style.display = "none";
             channelVideosFetched = true;
             const watchedIndex = getWatchedVideosIndex();
-            videos.forEach(video => expandContainer.appendChild(renderChannelVideoItem(video, watchedIndex)));
+            renderChannelVideoList(expandContainer, videos, watchedIndex);
         }
         catch (e) {
             console.warn("Failed to fetch channel videos", e);
@@ -512,14 +529,14 @@ export function renderChannelGroups(channels) {
             status.textContent = "Loading channel videos...";
             latestContainer.appendChild(status);
             try {
-                const videos = await fetchChannelVideos(channel.author_url, channel.author_id, 10);
+                const videos = await fetchChannelVideos(channel.author_url, channel.author_id, 50);
                 if (videos.length === 0) {
                     status.textContent = "No videos found for this channel.";
                 }
                 else {
                     status.style.display = "none";
                     const watchedIndex = getWatchedVideosIndex();
-                    videos.forEach(video => latestContainer.appendChild(renderChannelVideoItem(video, watchedIndex)));
+                    renderChannelVideoList(latestContainer, videos, watchedIndex);
                 }
             }
             catch (e) {
