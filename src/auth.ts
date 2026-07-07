@@ -192,27 +192,34 @@ export async function msalLogout(): Promise<void> {
   }
 }
 
-export async function msalAcquireGraphToken(): Promise<string> {
-  const account = msalInstance.getActiveAccount();
-  try {
-    if (!account) throw new Error('No signed-in account');
-    const res = await msalInstance.acquireTokenSilent({ scopes: msalScopes, account });
-    return res.accessToken;
-  } catch (e) {
-    console.warn('acquireTokenSilent failed, using interactive flow', e);
+let inFlightToken: Promise<string> | null = null;
 
-    const forceMobileCheckbox = document.getElementById('msal-force-mobile') as HTMLInputElement | null;
-    const useMobileFlow = forceMobileCheckbox ? forceMobileCheckbox.checked : false;
+export function msalAcquireGraphToken(): Promise<string> {
+  inFlightToken ??= acquireToken().finally(() => { inFlightToken = null; });
+  return inFlightToken;
 
-    if (useMobileFlow) {
-      sessionStorage.setItem('msal-acquiring-token', 'true');
-      await msalInstance.acquireTokenRedirect({ scopes: msalScopes });
-      throw new Error('Redirecting for token acquisition');
-    } else {
-      const res = await msalInstance.acquireTokenPopup({ scopes: msalScopes });
-      msalInstance.setActiveAccount(res.account);
-      updateMsalUi();
+  async function acquireToken(): Promise<string> {
+    const account = msalInstance.getActiveAccount();
+    try {
+      if (!account) throw new Error('No signed-in account');
+      const res = await msalInstance.acquireTokenSilent({ scopes: msalScopes, account });
       return res.accessToken;
+    } catch (e) {
+      console.warn('acquireTokenSilent failed, using interactive flow', e);
+
+      const forceMobileCheckbox = document.getElementById('msal-force-mobile') as HTMLInputElement | null;
+      const useMobileFlow = forceMobileCheckbox ? forceMobileCheckbox.checked : false;
+
+      if (useMobileFlow) {
+        sessionStorage.setItem('msal-acquiring-token', 'true');
+        await msalInstance.acquireTokenRedirect({ scopes: msalScopes });
+        throw new Error('Redirecting for token acquisition');
+      } else {
+        const res = await msalInstance.acquireTokenPopup({ scopes: msalScopes });
+        msalInstance.setActiveAccount(res.account);
+        updateMsalUi();
+        return res.accessToken;
+      }
     }
   }
 }
