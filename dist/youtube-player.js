@@ -2,6 +2,7 @@ import { extractYouTubeId, extractTimestamp, formatTime, resolveChannelDetails }
 import { addToHistory, updateHistoryProgress } from './history.js';
 import { isVideoInWatchLater, removeFromWatchLater, loadWatchLater } from './watch-later.js';
 import { fetchChapters, renderChapters, highlightCurrentChapter } from './chapters.js';
+const CURRENT_VID_KEY = "current-vid";
 export let player;
 let savingTimer;
 let currentPlayerState = -1;
@@ -37,7 +38,6 @@ export function initializePlayer() {
     setupTimelineListeners();
     setupPlayPauseButton();
     setupVolumeControls();
-    window.addEventListener('hashchange', onhashchange);
     window.onbeforeunload = savePosition;
     setInterval(updateTimeline, 500);
 }
@@ -260,15 +260,16 @@ function setupVolumeControls() {
 }
 function onPlayerReady() {
     console.log("onPlayerReady");
-    onhashchange();
+    restoreCurrentVideo();
     updateTimeline();
     updatePlayPauseButton();
     onPlayerReadyHooks.forEach(fn => fn());
 }
-function onhashchange() {
-    const vid = window.location.hash?.substring(1);
-    console.log("onhashchange", vid);
-    apply_vid(vid);
+function restoreCurrentVideo() {
+    const vid = localStorage.getItem(CURRENT_VID_KEY);
+    console.log("restoreCurrentVideo", vid);
+    if (vid)
+        apply_vid(vid, false);
 }
 function startSeek(retryDelay) {
     if (!player)
@@ -290,7 +291,7 @@ function startSeek(retryDelay) {
         }, retryDelay);
     }
 }
-export async function apply_vid(vid) {
+export async function apply_vid(vid, addHistory = true) {
     console.log("apply_vid", vid);
     if (vid && player) {
         const parsedUrlContainer = document.getElementById("parsed-url-container");
@@ -320,7 +321,9 @@ export async function apply_vid(vid) {
             const currentTime = savedPosition ? parseFloat(savedPosition) : 0;
             const duration = player.getDuration() || 0;
             const progress = duration > 0 ? { currentTime, duration, percentage: (currentTime / duration) * 100 } : null;
-            addToHistory(videoData, document.title, wasWatchLater, progress);
+            if (addHistory) {
+                addToHistory(videoData, document.title, wasWatchLater, progress);
+            }
             if (checklistItemId) {
                 await removeFromWatchLater(checklistItemId, null);
                 await loadWatchLater();
@@ -343,7 +346,8 @@ export function apply_input_vid(str) {
         if (timestamp !== null) {
             localStorage.setItem("vid-" + video_id, String(timestamp));
         }
-        window.location.hash = "#" + video_id;
+        localStorage.setItem(CURRENT_VID_KEY, video_id);
+        apply_vid(video_id);
     }
 }
 export function select_input_vid() {
