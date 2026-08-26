@@ -1,5 +1,5 @@
 import { extractYouTubeId, extractTimestamp, formatTime, resolveChannelDetails } from './video-utils.js';
-import { addToHistory, updateHistoryProgress } from './history.js';
+import { addToHistory, updateHistoryProgress, getHistoryProgress } from './history.js';
 import { isVideoInWatchLater, removeFromWatchLater, loadWatchLater } from './watch-later.js';
 import { fetchChapters, renderChapters, highlightCurrentChapter } from './chapters.js';
 const CURRENT_VID_KEY = "current-vid";
@@ -89,13 +89,17 @@ function savePosition() {
         }
     }
 }
+function getSavedPosition(vid) {
+    const local = Number(localStorage.getItem("vid-" + vid)) || 0;
+    return Math.max(local, getHistoryProgress(vid));
+}
 function getPosition() {
     if (!player)
         return 0;
     const vid = extractYouTubeId(player.getVideoUrl());
     if (!vid)
         return 0;
-    return Number(localStorage.getItem("vid-" + vid)) || 0;
+    return getSavedPosition(vid);
 }
 function updateTimeline() {
     if (!player || typeof player.getDuration !== "function" || !timeline || !timelineTimeSpan || !timelineDragSpan || !timelineControls)
@@ -317,8 +321,7 @@ export async function apply_vid(vid, addHistory = true) {
                 author: raw.author,
                 ...(details.author_url ? { author_url: details.author_url } : {})
             };
-            const savedPosition = localStorage.getItem("vid-" + videoData.video_id);
-            const currentTime = savedPosition ? parseFloat(savedPosition) : 0;
+            const currentTime = getSavedPosition(videoData.video_id);
             const duration = player.getDuration() || 0;
             const progress = duration > 0 ? { currentTime, duration, percentage: (currentTime / duration) * 100 } : null;
             if (addHistory) {

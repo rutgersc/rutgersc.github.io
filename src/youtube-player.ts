@@ -1,5 +1,5 @@
 import { extractYouTubeId, extractTimestamp, formatTime, resolveChannelDetails, VideoProgress, VideoData } from './video-utils.js';
-import { addToHistory, updateHistoryProgress } from './history.js';
+import { addToHistory, updateHistoryProgress, getHistoryProgress } from './history.js';
 import { isVideoInWatchLater, removeFromWatchLater, loadWatchLater } from './watch-later.js';
 import { fetchChapters, renderChapters, highlightCurrentChapter, type Chapter } from './chapters.js';
 
@@ -186,11 +186,16 @@ function savePosition(): void {
   }
 }
 
+function getSavedPosition(vid: string): number {
+  const local = Number(localStorage.getItem("vid-" + vid)) || 0;
+  return Math.max(local, getHistoryProgress(vid));
+}
+
 function getPosition(): number {
   if (!player) return 0;
   const vid = extractYouTubeId(player.getVideoUrl());
   if (!vid) return 0;
-  return Number(localStorage.getItem("vid-" + vid)) || 0;
+  return getSavedPosition(vid);
 }
 
 function updateTimeline(): void {
@@ -421,8 +426,7 @@ export async function apply_vid(vid: string, addHistory: boolean = true): Promis
         ...(details.author_url ? { author_url: details.author_url } : {})
       };
 
-      const savedPosition = localStorage.getItem("vid-" + videoData.video_id);
-      const currentTime = savedPosition ? parseFloat(savedPosition) : 0;
+      const currentTime = getSavedPosition(videoData.video_id);
       const duration = player.getDuration() || 0;
 
       const progress: VideoProgress | null = duration > 0 ? { currentTime, duration, percentage: (currentTime / duration) * 100 } : null;

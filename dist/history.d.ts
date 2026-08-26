@@ -22,6 +22,7 @@ export interface CompactedHistory {
 export declare function getHistory(): HistoryEntry[];
 export declare function addToHistory(videoData: VideoData, _name: string, wasWatchLater?: boolean, progress?: VideoProgress | null): void;
 export declare function updateHistoryProgress(videoId: string, currentTime: number, duration: number): void;
+export declare function getHistoryProgress(videoId: string): number;
 export type HistoryView = "list" | "grouped";
 export declare function getHistoryView(): HistoryView;
 export type GroupSort = "count" | "recent";

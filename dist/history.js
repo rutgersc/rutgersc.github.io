@@ -68,6 +68,10 @@ export function updateHistoryProgress(videoId, currentTime, duration) {
         }
     }
 }
+export function getHistoryProgress(videoId) {
+    const entry = getHistory().find(item => item.videoData.video_id === videoId);
+    return entry?.progress?.currentTime ?? 0;
+}
 export function getHistoryView() {
     return localStorage.getItem("history-view") === "grouped" ? "grouped" : "list";
 }

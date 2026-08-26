@@ -119,6 +119,11 @@ export function updateHistoryProgress(videoId: string, currentTime: number, dura
   }
 }
 
+export function getHistoryProgress(videoId: string): number {
+  const entry = getHistory().find(item => item.videoData.video_id === videoId);
+  return entry?.progress?.currentTime ?? 0;
+}
+
 export type HistoryView = "list" | "grouped";
 
 export function getHistoryView(): HistoryView {
