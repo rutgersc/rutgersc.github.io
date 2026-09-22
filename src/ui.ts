@@ -15,6 +15,38 @@ export interface RenderOptions {
   progress?: VideoProgress | null;
 }
 
+export function renderXItem(postId: string, dateViewed: string | null, onRemove?: () => void): HTMLLIElement {
+  const url = `https://x.com/i/status/${postId}`;
+  const item = document.createElement('li');
+  item.className = 'x-list-item';
+
+  const link = document.createElement('a');
+  link.href = url;
+  link.textContent = `X post ${postId}`;
+  link.target = '_blank';
+  link.rel = 'noopener noreferrer';
+  item.append(link);
+
+  if (dateViewed) {
+    const date = document.createElement('span');
+    date.textContent = getTimeAgo(new Date(dateViewed));
+    item.append(date);
+  }
+
+  const play = document.createElement('button');
+  play.textContent = 'Play';
+  play.onclick = () => apply_input_vid(url);
+  item.append(play);
+
+  if (onRemove) {
+    const remove = document.createElement('button');
+    remove.textContent = 'Remove';
+    remove.onclick = onRemove;
+    item.append(remove);
+  }
+  return item;
+}
+
 const renderProgressBar = (currentTime: number, duration: number, percentage: number): HTMLDivElement => {
   const bar = document.createElement("div");
   bar.style.width = "100%";

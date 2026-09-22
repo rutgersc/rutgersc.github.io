@@ -13,6 +13,27 @@ export interface VideoProgress {
   percentage: number;
 }
 
+export type VideoRef =
+  | { kind: 'youtube'; id: string; startSeconds: number | null }
+  | { kind: 'x'; postId: string };
+
+export function extractXPostId(input: string): string | null {
+  try {
+    const url = new URL(input);
+    if (url.protocol !== 'https:' || !['x.com', 'www.x.com', 'twitter.com', 'www.twitter.com'].includes(url.hostname)) return null;
+    return url.pathname.match(/^\/[\w]+\/status\/(\d+)(?:\/.*)?$/)?.[1] ?? null;
+  } catch {
+    return null;
+  }
+}
+
+export function parseVideoRef(input: string): VideoRef | null {
+  const postId = extractXPostId(input);
+  if (postId) return { kind: 'x', postId };
+  const id = extractYouTubeId(input);
+  return id ? { kind: 'youtube', id, startSeconds: extractTimestamp(input) } : null;
+}
+
 interface ChannelDetails {
   author_url: string | null;
   title: string | null;

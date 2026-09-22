@@ -1,7 +1,8 @@
-import { extractYouTubeId, extractTimestamp, formatTime, resolveChannelDetails, VideoProgress, VideoData } from './video-utils.js';
-import { addToHistory, updateHistoryProgress, getHistoryProgress } from './history.js';
+import { extractYouTubeId, parseVideoRef, formatTime, resolveChannelDetails, VideoProgress, VideoData } from './video-utils.js';
+import { addToHistory, addXToHistory, updateHistoryProgress, getHistoryProgress } from './history.js';
 import { isVideoInWatchLater, removeFromWatchLater, loadWatchLater } from './watch-later.js';
 import { fetchChapters, renderChapters, highlightCurrentChapter, type Chapter } from './chapters.js';
+import { hideXVideo, showXVideo } from './x-player.js';
 
 declare global {
   const YT: {
@@ -85,6 +86,7 @@ declare global {
 }
 
 const CURRENT_VID_KEY = "current-vid";
+const CURRENT_X_POST_KEY = 'current-x-post';
 
 export let player: YTPlayer | undefined;
 let savingTimer: ReturnType<typeof setInterval> | undefined;
@@ -148,6 +150,10 @@ function onYouTubePlayerAPIReady(): void {
 function onPlayerStateChange(e: YTStateChangeEvent): void {
   console.log("onPlayerStateChange", e);
   currentPlayerState = e.data;
+  if (localStorage.getItem(CURRENT_X_POST_KEY)) {
+    clearInterval(savingTimer);
+    return;
+  }
   document.title = player?.getVideoData()?.title ?? document.title;
   updatePlayPauseButton();
 
@@ -166,7 +172,7 @@ function onPlayerStateChange(e: YTStateChangeEvent): void {
 }
 
 function savePosition(): void {
-  if (!player?.getVideoUrl) return;
+  if (!player?.getVideoUrl || localStorage.getItem(CURRENT_X_POST_KEY)) return;
 
   if (isInitialSeek) {
     console.log("savePosition: skipping during initial seek");
@@ -366,7 +372,12 @@ function setupVolumeControls(): void {
 
 function onPlayerReady(): void {
   console.log("onPlayerReady");
-  restoreCurrentVideo();
+  const postId = localStorage.getItem(CURRENT_X_POST_KEY);
+  if (postId) {
+    showXCurrentUi(postId);
+    showXVideo(postId);
+  }
+  else restoreCurrentVideo();
   updateTimeline();
   updatePlayPauseButton();
   onPlayerReadyHooks.forEach(fn => fn());
@@ -379,7 +390,7 @@ function restoreCurrentVideo(): void {
 }
 
 function startSeek(retryDelay: number): void {
-  if (!player) return;
+  if (!player || localStorage.getItem(CURRENT_X_POST_KEY)) return;
   const dur = player.getDuration();
   console.log("getDuration", dur);
   if (dur > 0) {
@@ -400,13 +411,16 @@ function startSeek(retryDelay: number): void {
 export async function apply_vid(vid: string, addHistory: boolean = true): Promise<void> {
   console.log("apply_vid", vid);
   if (vid && player) {
+    localStorage.removeItem(CURRENT_X_POST_KEY);
+    hideXVideo();
     const parsedUrlContainer = document.getElementById("parsed-url-container");
     const parsedUrlInput = document.getElementById("parsed-url") as HTMLInputElement | null;
     const fullUrl = `https://www.youtube.com/watch?v=${vid}`;
     if (parsedUrlInput) parsedUrlInput.value = fullUrl;
     if (parsedUrlContainer) parsedUrlContainer.style.display = "block";
 
-    const checklistItemId = await isVideoInWatchLater(vid);
+    const checklistItemId = await isVideoInWatchLater({ kind: 'youtube', id: vid, startSeconds: null });
+    if (localStorage.getItem(CURRENT_X_POST_KEY) || localStorage.getItem(CURRENT_VID_KEY) !== vid) return;
     const wasWatchLater = checklistItemId !== null;
 
     isInitialSeek = true;
@@ -416,9 +430,10 @@ export async function apply_vid(vid: string, addHistory: boolean = true): Promis
     startSeek(100);
 
     setTimeout(async () => {
-      if (!player) return;
+      if (!player || localStorage.getItem(CURRENT_X_POST_KEY) || localStorage.getItem(CURRENT_VID_KEY) !== vid) return;
       const raw = player.getVideoData();
       const details = await resolveChannelDetails(raw.video_id);
+      if (localStorage.getItem(CURRENT_X_POST_KEY) || localStorage.getItem(CURRENT_VID_KEY) !== vid) return;
       const videoData: VideoData = {
         video_id: raw.video_id,
         title: raw.title,
@@ -453,15 +468,38 @@ export async function apply_vid(vid: string, addHistory: boolean = true): Promis
 }
 
 export function apply_input_vid(str: string): void {
-  const video_id = extractYouTubeId(str);
-  if (video_id) {
-    const timestamp = extractTimestamp(str);
-    if (timestamp !== null) {
-      localStorage.setItem("vid-" + video_id, String(timestamp));
-    }
-    localStorage.setItem(CURRENT_VID_KEY, video_id);
-    apply_vid(video_id);
+  const ref = parseVideoRef(str);
+  if (!ref) return;
+  if (ref.kind === 'youtube') {
+    if (ref.startSeconds !== null) localStorage.setItem('vid-' + ref.id, String(ref.startSeconds));
+    localStorage.setItem(CURRENT_VID_KEY, ref.id);
+    localStorage.removeItem(CURRENT_X_POST_KEY);
+    hideXVideo();
+    apply_vid(ref.id);
+    return;
   }
+
+  savePosition();
+  localStorage.setItem(CURRENT_X_POST_KEY, ref.postId);
+  player?.stopVideo();
+  showXCurrentUi(ref.postId);
+  showXVideo(ref.postId);
+  isVideoInWatchLater(ref).then(async checklistItemId => {
+    if (localStorage.getItem(CURRENT_X_POST_KEY) !== ref.postId) return;
+    addXToHistory(ref.postId, checklistItemId !== null);
+    if (checklistItemId) {
+      await removeFromWatchLater(checklistItemId, null);
+      await loadWatchLater();
+    }
+  });
+}
+
+function showXCurrentUi(postId: string): void {
+  document.title = 'X video';
+  const parsedUrl = document.getElementById('parsed-url') as HTMLInputElement | null;
+  if (parsedUrl) parsedUrl.value = `https://x.com/i/status/${postId}`;
+  const parsedUrlContainer = document.getElementById('parsed-url-container');
+  if (parsedUrlContainer) parsedUrlContainer.style.display = 'block';
 }
 
 export function select_input_vid(): void {

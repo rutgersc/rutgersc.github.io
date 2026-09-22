@@ -1,14 +1,27 @@
-import { renderVideoItem, renderChannelGroups } from './ui.js';
+import { renderVideoItem, renderXItem, renderChannelGroups } from './ui.js';
 import { scheduleSyncToTodo, syncHistoryNow, isHistorySyncReady } from './history-sync.js';
 import { resolveChannelDetails } from './video-utils.js';
 import type { VideoData, VideoProgress } from './video-utils.js';
 
-export interface HistoryEntry {
+export interface YouTubeHistoryEntry {
+  kind: 'youtube';
   videoData: VideoData;
   dateViewed: string;
   wasWatchLater?: boolean;
   progress?: VideoProgress;
 }
+
+export interface XHistoryEntry {
+  kind: 'x';
+  postId: string;
+  dateViewed: string;
+  wasWatchLater?: boolean;
+}
+
+export type HistoryEntry = YouTubeHistoryEntry | XHistoryEntry;
+
+export const historyKey = (entry: HistoryEntry): string =>
+  entry.kind === 'x' ? `x:${entry.postId}` : `youtube:${entry.videoData.video_id}`;
 
 export interface ChannelGroup {
   author: string;
@@ -26,56 +39,58 @@ export interface CompactedHistory {
   channels: ChannelGroup[];
 }
 
-interface LegacyHistoryEntry {
-  videoData: VideoData;
-  timestamp?: string;
-  dateViewed?: string;
-  wasWatchLater?: boolean;
-  progress?: VideoProgress;
+export function parseHistoryEntry(value: unknown): HistoryEntry | null {
+  if (!value || typeof value !== 'object') return null;
+  const entry = value as Record<string, unknown>;
+  if (entry.kind === 'x') {
+    return typeof entry.postId === 'string' && /^\d+$/.test(entry.postId) && typeof entry.dateViewed === 'string'
+      ? { kind: 'x', postId: entry.postId, dateViewed: entry.dateViewed, wasWatchLater: entry.wasWatchLater === true }
+      : null;
+  }
+  if (entry.kind !== undefined && entry.kind !== 'youtube') return null;
+  if (!entry.videoData || typeof entry.videoData !== 'object') return null;
+  const videoData = entry.videoData as Record<string, unknown>;
+  if (typeof videoData.video_id !== 'string') return null;
+  const dateViewed = typeof entry.dateViewed === 'string' ? entry.dateViewed
+    : typeof entry.timestamp === 'string' ? entry.timestamp : new Date().toISOString();
+  const progress = entry.progress && typeof entry.progress === 'object' ? entry.progress as VideoProgress : null;
+  return {
+    kind: 'youtube',
+    videoData: {
+      ...videoData,
+      title: typeof videoData.title === 'string' ? videoData.title : '',
+      author: typeof videoData.author === 'string' ? videoData.author : ''
+    } as VideoData,
+    dateViewed,
+    wasWatchLater: entry.wasWatchLater === true,
+    ...(progress ? { progress } : {})
+  };
 }
 
 export function getHistory(): HistoryEntry[] {
-  const history = JSON.parse(localStorage.getItem("history") || "[]") as LegacyHistoryEntry[];
-
-  let needsMigration = false;
-  const migratedHistory: HistoryEntry[] = history.map(item => {
-    if (item.timestamp && !item.dateViewed) {
-      needsMigration = true;
-      return {
-        videoData: item.videoData,
-        dateViewed: item.timestamp,
-        wasWatchLater: item.wasWatchLater || false,
-        progress: item.progress
-      };
-    }
-    return {
-      videoData: item.videoData,
-      dateViewed: item.dateViewed || new Date().toISOString(),
-      wasWatchLater: item.wasWatchLater || false,
-      progress: item.progress
-    };
-  });
-
-  if (needsMigration) {
-    localStorage.setItem("history", JSON.stringify(migratedHistory));
+  const stored = JSON.parse(localStorage.getItem('history') || '[]') as unknown;
+  if (!Array.isArray(stored)) return [];
+  const history = stored.map(parseHistoryEntry).filter((entry): entry is HistoryEntry => entry !== null);
+  if (stored.some(entry => entry?.timestamp && !entry?.dateViewed)) {
+    localStorage.setItem('history', JSON.stringify(history));
   }
-
-  return migratedHistory;
+  return history;
 }
 
 export function addToHistory(videoData: VideoData, _name: string, wasWatchLater: boolean = false, progress: VideoProgress | null = null): void {
   const history = getHistory();
 
   const existingEntry = history.find(
-    (item) => item.videoData.video_id === videoData.video_id
+    (item) => item.kind === 'youtube' && item.videoData.video_id === videoData.video_id
   );
   const preservedWasWatchLater = (existingEntry?.wasWatchLater === true) || wasWatchLater;
 
   const filteredHistory = history
-    .filter((item) => item.videoData.video_id !== videoData.video_id);
+    .filter((item) => item.kind !== 'youtube' || item.videoData.video_id !== videoData.video_id);
 
   const dateViewed = new Date().toISOString();
   const entry: HistoryEntry = {
+    kind: 'youtube',
     videoData,
     dateViewed,
     wasWatchLater: preservedWasWatchLater
@@ -101,9 +116,23 @@ export function addToHistory(videoData: VideoData, _name: string, wasWatchLater:
   }
 }
 
+export function addXToHistory(postId: string, wasWatchLater = false): void {
+  const history = getHistory();
+  const previous = history.find(entry => entry.kind === 'x' && entry.postId === postId);
+  const entry: XHistoryEntry = {
+    kind: 'x',
+    postId,
+    dateViewed: new Date().toISOString(),
+    wasWatchLater: wasWatchLater || previous?.wasWatchLater === true
+  };
+  localStorage.setItem('history', JSON.stringify([entry, ...history.filter(item => historyKey(item) !== historyKey(entry))]));
+  renderHistory();
+  if (isHistorySyncReady()) syncHistoryNow();
+}
+
 export function updateHistoryProgress(videoId: string, currentTime: number, duration: number): void {
   const history = getHistory();
-  const entry = history.find(item => item.videoData.video_id === videoId);
+  const entry = history.find((item): item is YouTubeHistoryEntry => item.kind === 'youtube' && item.videoData.video_id === videoId);
 
   if (entry && duration > 0) {
     entry.progress = {
@@ -120,7 +149,7 @@ export function updateHistoryProgress(videoId: string, currentTime: number, dura
 }
 
 export function getHistoryProgress(videoId: string): number {
-  const entry = getHistory().find(item => item.videoData.video_id === videoId);
+  const entry = getHistory().find((item): item is YouTubeHistoryEntry => item.kind === 'youtube' && item.videoData.video_id === videoId);
   return entry?.progress?.currentTime ?? 0;
 }
 
@@ -147,7 +176,7 @@ function setGroupSort(sort: GroupSort): void {
 }
 
 export function groupByChannel(history: HistoryEntry[], sort: GroupSort = "count"): ChannelGroup[] {
-  const groups = history.reduce((acc, entry) => {
+  const groups = history.filter((entry): entry is YouTubeHistoryEntry => entry.kind === 'youtube').reduce((acc, entry) => {
     const vd = entry.videoData;
     const key = vd.author_url || vd.author || vd.video_id;
     const group = acc[key] ?? (acc[key] = { author: vd.author, author_url: vd.author_url, videos: [] });
@@ -229,22 +258,25 @@ export function renderHistory(): void {
   }
 
   if (view === "grouped") {
+    history.filter((entry): entry is XHistoryEntry => entry.kind === 'x').forEach(entry => {
+      history_list.appendChild(renderXItem(entry.postId, entry.dateViewed, () => removeEntry(historyKey(entry))));
+    });
     history_list.appendChild(renderChannelGroups(groupByChannel(history, getGroupSort())));
     return;
   }
 
-  const removeEntry = (videoId: string): void => {
-    const filtered = getHistory().filter(item => item.videoData.video_id !== videoId);
+  function removeEntry(key: string): void {
+    const filtered = getHistory().filter(item => historyKey(item) !== key);
     localStorage.setItem("history", JSON.stringify(filtered));
     renderHistory();
     if (isHistorySyncReady()) syncHistoryNow();
-  };
+  }
 
   const fixEntry = async (videoId: string): Promise<void> => {
     const details = await resolveChannelDetails(videoId);
     const current = getHistory();
-    const entry = current.find(item => item.videoData.video_id === videoId);
-    if (!entry) return;
+    const entry = current.find(item => item.kind === 'youtube' && item.videoData.video_id === videoId);
+    if (!entry || entry.kind !== 'youtube') return;
     entry.videoData = {
       ...entry.videoData,
       title: entry.videoData.title || details.title || "",
@@ -256,13 +288,17 @@ export function renderHistory(): void {
     if (isHistorySyncReady()) syncHistoryNow();
   };
 
-  history.slice(0, flatRenderLimit).forEach(({ videoData, dateViewed, wasWatchLater, progress }) => {
-    history_list.appendChild(renderVideoItem(videoData, dateViewed, {
-      onRemove: removeEntry,
-      onFix: () => fixEntry(videoData.video_id),
-      wasWatchLater: wasWatchLater || false,
-      progress: progress || null
-    }));
+  history.slice(0, flatRenderLimit).forEach(entry => {
+    if (entry.kind === 'x') {
+      history_list.appendChild(renderXItem(entry.postId, entry.dateViewed, () => removeEntry(historyKey(entry))));
+    } else {
+      history_list.appendChild(renderVideoItem(entry.videoData, entry.dateViewed, {
+        onRemove: () => removeEntry(historyKey(entry)),
+        onFix: () => fixEntry(entry.videoData.video_id),
+        wasWatchLater: entry.wasWatchLater || false,
+        progress: entry.progress || null
+      }));
+    }
   });
 
   if (history.length > flatRenderLimit) {
@@ -293,7 +329,7 @@ export function getWatchedVideosIndex(): Map<string, { dateViewed: string }> {
     index.set(v.videoData.video_id, { dateViewed: v.dateViewed });
   });
 
-  getHistory().forEach(entry => {
+  getHistory().filter((entry): entry is YouTubeHistoryEntry => entry.kind === 'youtube').forEach(entry => {
     const existing = index.get(entry.videoData.video_id);
     if (!existing || entry.dateViewed > existing.dateViewed) {
       index.set(entry.videoData.video_id, { dateViewed: entry.dateViewed });
@@ -312,12 +348,13 @@ export function importCompactedIntoHistory(): void {
   if (!compacted) return;
 
   const imported: HistoryEntry[] = compacted.channels.flatMap(ch =>
-    ch.videos.map(v => ({ videoData: v.videoData, dateViewed: v.dateViewed, wasWatchLater: v.wasWatchLater ?? false }))
+    ch.videos.map(v => ({ kind: 'youtube' as const, videoData: v.videoData, dateViewed: v.dateViewed, wasWatchLater: v.wasWatchLater ?? false }))
   );
 
   const byId = [...getHistory(), ...imported].reduce((acc, entry) => {
-    const prev = acc[entry.videoData.video_id];
-    if (!prev || entry.dateViewed > prev.dateViewed) acc[entry.videoData.video_id] = entry;
+    const key = historyKey(entry);
+    const prev = acc[key];
+    if (!prev || entry.dateViewed > prev.dateViewed) acc[key] = entry;
     return acc;
   }, {} as Record<string, HistoryEntry>);
 
@@ -340,8 +377,9 @@ export function dumpAllEvents(): void {
 
   let output = "=== CURRENT HISTORY ===\n\n";
   history.forEach((event, index) => {
-    output += `[${index}] ${event.videoData.author} - ${event.videoData.title}\n`;
-    output += `    Video ID: ${event.videoData.video_id}\n`;
+    output += event.kind === 'x'
+      ? `[${index}] X post ${event.postId}\n`
+      : `[${index}] ${event.videoData.author} - ${event.videoData.title}\n    Video ID: ${event.videoData.video_id}\n`;
     output += `    Viewed: ${event.dateViewed}\n\n`;
   });
 

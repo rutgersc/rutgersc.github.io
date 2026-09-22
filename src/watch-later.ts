@@ -1,6 +1,6 @@
 import { callGraphApi, getAppStateTodoList, getAppStateTasks, createAppStateTask, TodoTask, GraphApiResponse } from './graph-api.js';
-import { extractYouTubeId, extractTimestamp, VideoData } from './video-utils.js';
-import { renderVideoItem } from './ui.js';
+import { extractYouTubeId, extractTimestamp, parseVideoRef, VideoData, VideoRef } from './video-utils.js';
+import { renderVideoItem, renderXItem } from './ui.js';
 
 interface ChecklistItem {
   id: string;
@@ -65,19 +65,25 @@ async function getWatchLaterChecklistItems(): Promise<ChecklistItem[]> {
   }
 }
 
-export async function isVideoInWatchLater(videoId: string): Promise<string | null> {
+export async function isVideoInWatchLater(ref: VideoRef): Promise<string | null> {
   try {
     if (!watchLaterTaskId) return null;
     const items = await getWatchLaterChecklistItems();
     for (const item of items) {
+      const parsed = parseVideoRef(item.displayName);
+      if ((parsed?.kind === 'x' && ref.kind === 'x' && parsed.postId === ref.postId)
+        || (parsed?.kind === 'youtube' && ref.kind === 'youtube' && parsed.id === ref.id)) {
+        return item.id;
+      }
+      if (ref.kind === 'x') continue;
       try {
         const videoData = JSON.parse(item.displayName) as VideoData;
-        if (videoData.video_id === videoId) {
+        if (videoData.video_id === ref.id) {
           return item.id;
         }
       } catch {
         const id = extractYouTubeId(item.displayName) || item.displayName;
-        if (id === videoId) {
+        if (id === ref.id) {
           return item.id;
         }
       }
@@ -114,15 +120,22 @@ export async function removeFromWatchLater(checklistItemId: string, listItemElem
   }
 }
 
-interface VideoDataItem {
+interface YouTubeVideoDataItem {
+  kind: 'youtube';
   videoData: VideoData;
   checklistItemId: string;
   originalUrl: string | null;
 }
 
+interface XVideoDataItem {
+  kind: 'x';
+  postId: string;
+  checklistItemId: string;
+}
+
 interface ListItemEntry {
   element: HTMLLIElement;
-  videoData: VideoData;
+  videoData?: VideoData;
 }
 
 export async function loadWatchLater(): Promise<void> {
@@ -159,17 +172,20 @@ export async function loadWatchLater(): Promise<void> {
       return;
     }
 
-    const videoDataList: VideoDataItem[] = items.map(item => {
+    const videoDataList: Array<YouTubeVideoDataItem | XVideoDataItem> = items.map(item => {
+      const ref = parseVideoRef(item.displayName);
+      if (ref?.kind === 'x') return { kind: 'x', postId: ref.postId, checklistItemId: item.id };
       try {
         const videoData = JSON.parse(item.displayName) as VideoData;
         if (!videoData.video_id) {
           throw new Error('No video_id in parsed data');
         }
-        return { videoData, checklistItemId: item.id, originalUrl: null };
+        return { kind: 'youtube', videoData, checklistItemId: item.id, originalUrl: null };
       } catch {
         const videoId = extractYouTubeId(item.displayName) || item.displayName;
         const timestamp = extractTimestamp(item.displayName);
         return {
+          kind: 'youtube',
           videoData: {
             video_id: videoId,
             title: 'Loading...',
@@ -183,7 +199,12 @@ export async function loadWatchLater(): Promise<void> {
       }
     });
 
-    const listItems: ListItemEntry[] = videoDataList.map(({ videoData, checklistItemId, originalUrl }) => {
+    const listItems: ListItemEntry[] = videoDataList.map(item => {
+      if (item.kind === 'x') {
+        const element = renderXItem(item.postId, null, () => removeFromWatchLater(item.checklistItemId, element));
+        return { element };
+      }
+      const { videoData, checklistItemId, originalUrl } = item;
       const element = renderVideoItem(videoData, null, {
         onRemove: () => removeFromWatchLater(checklistItemId, element),
         playUrl: originalUrl
@@ -195,8 +216,8 @@ export async function loadWatchLater(): Promise<void> {
       watchLaterList.appendChild(element);
     });
 
-    const itemsNeedingMetadata = listItems.filter(({ videoData }) =>
-      !videoData.title || videoData.title === 'Loading...'
+    const itemsNeedingMetadata = listItems.filter((item): item is ListItemEntry & { videoData: VideoData } =>
+      !!item.videoData && (!item.videoData.title || item.videoData.title === 'Loading...')
     );
 
     if (itemsNeedingMetadata.length > 0) {

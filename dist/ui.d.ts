@@ -10,6 +10,7 @@ export interface RenderOptions {
     onFix?: (() => void) | null;
     progress?: VideoProgress | null;
 }
+export declare function renderXItem(postId: string, dateViewed: string | null, onRemove?: () => void): HTMLLIElement;
 export declare function renderVideoItem(videoData: VideoData, dateViewed: string | null, options?: RenderOptions): HTMLLIElement;
 export declare function renderChannelGroups(channels: ChannelGroup[]): HTMLDivElement;
 export declare function initViewportManager(): void;

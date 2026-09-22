@@ -1,5 +1,5 @@
 import { getAppStateTodoList, getAppStateTasks, createAppStateTask, updateAppStateTask, callGraphApi, TodoTask } from './graph-api.js';
-import { getHistory, HistoryEntry } from './history.js';
+import { getHistory, historyKey, parseHistoryEntry, HistoryEntry } from './history.js';
 import { msalInstance } from './auth.js';
 
 export let historyTaskId: string | null = null;
@@ -73,7 +73,8 @@ function bodyToHistory(body: string): HistoryEntry[] {
   const history: HistoryEntry[] = [];
   for (const line of lines) {
     try {
-      history.push(JSON.parse(line) as HistoryEntry);
+      const entry = parseHistoryEntry(JSON.parse(line) as unknown);
+      if (entry) history.push(entry);
     } catch (e) {
       console.warn('Failed to parse history line:', line, e);
     }
@@ -107,8 +108,7 @@ function mergeHistories(local: HistoryEntry[], remote: HistoryEntry[]): HistoryE
   const byVideoId = new Map<string, HistoryEntry>();
 
   for (const entry of [...local, ...remote]) {
-    const videoId = entry.videoData?.video_id;
-    if (!videoId) continue;
+    const videoId = historyKey(entry);
 
     const existing = byVideoId.get(videoId);
     if (!existing) {
@@ -119,7 +119,7 @@ function mergeHistories(local: HistoryEntry[], remote: HistoryEntry[]): HistoryE
       if (entryDate > existingDate) {
         byVideoId.set(videoId, entry);
       } else if (entryDate.getTime() === existingDate.getTime()) {
-        if (entry.progress && (!existing.progress || entry.progress.currentTime > existing.progress.currentTime)) {
+        if (entry.kind === 'youtube' && existing.kind === 'youtube' && entry.progress && (!existing.progress || entry.progress.currentTime > existing.progress.currentTime)) {
           byVideoId.set(videoId, { ...existing, progress: entry.progress });
         }
       }

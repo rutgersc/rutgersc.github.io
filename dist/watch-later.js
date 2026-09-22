@@ -1,6 +1,6 @@
 import { callGraphApi, getAppStateTodoList, getAppStateTasks, createAppStateTask } from './graph-api.js';
-import { extractYouTubeId, extractTimestamp } from './video-utils.js';
-import { renderVideoItem } from './ui.js';
+import { extractYouTubeId, extractTimestamp, parseVideoRef } from './video-utils.js';
+import { renderVideoItem, renderXItem } from './ui.js';
 export let watchLaterTaskId = null;
 export let watchLaterListId = null;
 let initWatchLaterPromise = null;
@@ -51,21 +51,28 @@ async function getWatchLaterChecklistItems() {
         return [];
     }
 }
-export async function isVideoInWatchLater(videoId) {
+export async function isVideoInWatchLater(ref) {
     try {
         if (!watchLaterTaskId)
             return null;
         const items = await getWatchLaterChecklistItems();
         for (const item of items) {
+            const parsed = parseVideoRef(item.displayName);
+            if ((parsed?.kind === 'x' && ref.kind === 'x' && parsed.postId === ref.postId)
+                || (parsed?.kind === 'youtube' && ref.kind === 'youtube' && parsed.id === ref.id)) {
+                return item.id;
+            }
+            if (ref.kind === 'x')
+                continue;
             try {
                 const videoData = JSON.parse(item.displayName);
-                if (videoData.video_id === videoId) {
+                if (videoData.video_id === ref.id) {
                     return item.id;
                 }
             }
             catch {
                 const id = extractYouTubeId(item.displayName) || item.displayName;
-                if (id === videoId) {
+                if (id === ref.id) {
                     return item.id;
                 }
             }
@@ -125,17 +132,21 @@ export async function loadWatchLater() {
             return;
         }
         const videoDataList = items.map(item => {
+            const ref = parseVideoRef(item.displayName);
+            if (ref?.kind === 'x')
+                return { kind: 'x', postId: ref.postId, checklistItemId: item.id };
             try {
                 const videoData = JSON.parse(item.displayName);
                 if (!videoData.video_id) {
                     throw new Error('No video_id in parsed data');
                 }
-                return { videoData, checklistItemId: item.id, originalUrl: null };
+                return { kind: 'youtube', videoData, checklistItemId: item.id, originalUrl: null };
             }
             catch {
                 const videoId = extractYouTubeId(item.displayName) || item.displayName;
                 const timestamp = extractTimestamp(item.displayName);
                 return {
+                    kind: 'youtube',
                     videoData: {
                         video_id: videoId,
                         title: 'Loading...',
@@ -148,7 +159,12 @@ export async function loadWatchLater() {
                 };
             }
         });
-        const listItems = videoDataList.map(({ videoData, checklistItemId, originalUrl }) => {
+        const listItems = videoDataList.map(item => {
+            if (item.kind === 'x') {
+                const element = renderXItem(item.postId, null, () => removeFromWatchLater(item.checklistItemId, element));
+                return { element };
+            }
+            const { videoData, checklistItemId, originalUrl } = item;
             const element = renderVideoItem(videoData, null, {
                 onRemove: () => removeFromWatchLater(checklistItemId, element),
                 playUrl: originalUrl
@@ -158,7 +174,7 @@ export async function loadWatchLater() {
         listItems.forEach(({ element }) => {
             watchLaterList.appendChild(element);
         });
-        const itemsNeedingMetadata = listItems.filter(({ videoData }) => !videoData.title || videoData.title === 'Loading...');
+        const itemsNeedingMetadata = listItems.filter((item) => !!item.videoData && (!item.videoData.title || item.videoData.title === 'Loading...'));
         if (itemsNeedingMetadata.length > 0) {
             Promise.all(itemsNeedingMetadata.map(async ({ element, videoData }) => {
                 const videoId = videoData.video_id;

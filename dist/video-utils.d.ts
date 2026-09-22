@@ -11,6 +11,16 @@ export interface VideoProgress {
     duration: number;
     percentage: number;
 }
+export type VideoRef = {
+    kind: 'youtube';
+    id: string;
+    startSeconds: number | null;
+} | {
+    kind: 'x';
+    postId: string;
+};
+export declare function extractXPostId(input: string): string | null;
+export declare function parseVideoRef(input: string): VideoRef | null;
 interface ChannelDetails {
     author_url: string | null;
     title: string | null;

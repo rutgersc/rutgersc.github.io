@@ -1,3 +1,21 @@
+export function extractXPostId(input) {
+    try {
+        const url = new URL(input);
+        if (url.protocol !== 'https:' || !['x.com', 'www.x.com', 'twitter.com', 'www.twitter.com'].includes(url.hostname))
+            return null;
+        return url.pathname.match(/^\/[\w]+\/status\/(\d+)(?:\/.*)?$/)?.[1] ?? null;
+    }
+    catch {
+        return null;
+    }
+}
+export function parseVideoRef(input) {
+    const postId = extractXPostId(input);
+    if (postId)
+        return { kind: 'x', postId };
+    const id = extractYouTubeId(input);
+    return id ? { kind: 'youtube', id, startSeconds: extractTimestamp(input) } : null;
+}
 export function extractYouTubeId(input) {
     try {
         if (/^[\w-]{11}$/.test(input)) {

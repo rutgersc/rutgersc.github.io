@@ -14,6 +14,32 @@ body {
   width: 100%;
 }
 
+#x-video {
+  justify-content: center;
+  margin: 5px auto;
+}
+
+#x-video:not([hidden]) {
+  display: flex;
+}
+
+.x-list-item {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  max-width: 480px;
+  margin: 12px auto;
+  padding: 10px 16px;
+  border: 1px solid #333;
+  border-radius: 8px;
+  background: #232323;
+}
+
+.x-list-item a { color: #8ecae6; }
+.x-list-item span { color: #888; font-size: 0.8rem; }
+.x-list-item button { background: #2d6a4f; color: #fff; border: 0; border-radius: 4px; padding: 6px 10px; cursor: pointer; }
+
 .input-container {
   display: flex;
   flex-direction: row;
