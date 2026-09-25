@@ -92,3 +92,12 @@ ul li {
 #msal-user-info.msal-options-open .msal-options-caret {
   transform: rotate(180deg);
 }
+
+@media (pointer: coarse) {
+  body {
+    box-sizing: content-box;
+    width: calc(100vw - 16px);
+    padding-left: 50vw;
+    padding-right: 50vw;
+  }
+}

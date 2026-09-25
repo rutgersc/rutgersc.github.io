@@ -724,7 +724,9 @@ export function initViewportManager(): void {
       switchWidthBtn.textContent = "Viewport";
     } else {
       const viewportWidth = window.visualViewport?.width ?? window.innerWidth;
-      const viewportLeft = window.visualViewport?.offsetLeft ?? 0;
+      const container = ytplayer.parentElement;
+      const containerLeft = container ? container.getBoundingClientRect().left + window.scrollX : 0;
+      const viewportLeft = (window.visualViewport?.pageLeft ?? window.scrollX) - containerLeft;
 
       ytplayer.style.width = viewportWidth + "px";
       timeline.style.width = viewportWidth + "px";
@@ -772,4 +774,8 @@ export function initViewportManager(): void {
   };
 
   setFullWidth(true);
+
+  if (window.matchMedia("(pointer: coarse)").matches) {
+    window.scrollTo({ left: parseFloat(getComputedStyle(document.body).paddingLeft) || 0, top: window.scrollY });
+  }
 }

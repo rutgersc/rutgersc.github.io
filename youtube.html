@@ -73,7 +73,7 @@
       step="1"
       style="width: 100%; margin: 10px 0;"
     />
-    <div id="timeline-controls" style="display:none; flex-direction:column; align-items:center; gap:6px; margin:4px 0 10px 0;">
+    <div id="timeline-controls" style="display:flex; flex-direction:column; align-items:center; gap:6px; margin:4px 0 10px 0;">
       <div style="display:flex; justify-content:center; align-items:center; gap:6px; flex-wrap:wrap;">
         <button data-offset="-15" style="background:#232323; color:#ff6b6b; border:1px solid #333; border-radius:8px; font-size:1rem; font-weight:bold; padding:10px 14px; cursor:pointer;">-15</button>
         <button data-offset="-10" style="background:#232323; color:#ff6b6b; border:1px solid #333; border-radius:8px; font-size:1rem; font-weight:bold; padding:10px 14px; cursor:pointer;">-10</button>
@@ -82,8 +82,8 @@
         <button data-offset="10" style="background:#232323; color:#6cf06c; border:1px solid #333; border-radius:8px; font-size:1rem; font-weight:bold; padding:10px 14px; cursor:pointer;">+10</button>
         <button data-offset="15" style="background:#232323; color:#6cf06c; border:1px solid #333; border-radius:8px; font-size:1rem; font-weight:bold; padding:10px 14px; cursor:pointer;">+15</button>
       </div>
+      <button id="timeline-apply-btn" title="Seek to this time" style="background:#232323; color:#6cf06c; border:2px solid #6cf06c; border-radius:10px; font-size:1.5rem; font-weight:bold; padding:16px 0; width:min(100%, 360px); cursor:pointer;">Apply</button>
       <div style="display:flex; justify-content:center; align-items:center; gap:6px;">
-        <button id="timeline-apply-btn" title="Seek to this time" style="background:#232323; color:#6cf06c; border:1px solid #6cf06c; border-radius:8px; font-size:1.1rem; font-weight:bold; padding:10px 20px; cursor:pointer;">Apply</button>
         <button id="timeline-rel-toggle" style="background:#232323; color:#8ecae6; border:1px solid #333; border-radius:8px; font-size:0.85rem; font-weight:bold; padding:10px 12px; cursor:pointer;">Rel</button>
         <button id="timeline-cancel-btn" title="Cancel seek" style="background:#232323; color:#ff6b6b; border:1px solid #ff6b6b; border-radius:8px; font-size:1.1rem; font-weight:bold; padding:10px 20px; cursor:pointer;">Cancel</button>
       </div>
@@ -109,11 +109,6 @@
         onmouseover="this.style.background='#1a1a1a';this.style.color='#fff';"
         onmouseout="this.style.background='#232323';this.style.color='#6cf06c';"
       >Play/Pause</button>
-      <div style="display: flex; align-items: center; gap: 6px;">
-        <button id="vol-down-btn" style="background:#232323; color:#ff6b6b; border:1px solid #333; border-radius:8px; font-size:1rem; font-weight:bold; padding:10px 14px; cursor:pointer;">-</button>
-        <span id="volume-label" style="color:#ccc; font-size:0.95rem; font-weight:bold; min-width:28px; text-align:center;">100</span>
-        <button id="vol-up-btn" style="background:#232323; color:#6cf06c; border:1px solid #333; border-radius:8px; font-size:1rem; font-weight:bold; padding:10px 14px; cursor:pointer;">+</button>
-      </div>
       <button
         id="switch-width-btn"
         style="
@@ -131,6 +126,15 @@
         onmouseover="this.style.background='#1a1a1a';this.style.color='#fff';"
         onmouseout="this.style.background='#232323';this.style.color='#8ecae6';"
       >Viewport</button>
+    </div>
+
+    <div style="display: flex; justify-content: center; align-items: center; margin: 10px 0; gap: 6px;">
+      <button id="vol-down-btn" style="background:#232323; color:#ff6b6b; border:1px solid #333; border-radius:8px; font-size:1rem; font-weight:bold; padding:10px 14px; cursor:pointer;">-</button>
+      <div title="Volume" style="width:160px; height:14px; background:#232323; border:1px solid #333; border-radius:7px; overflow:hidden;">
+        <div id="volume-fill" style="width:100%; height:100%; background:#8ecae6; transition:width 0.15s;"></div>
+      </div>
+      <span id="volume-label" style="color:#ccc; font-size:0.95rem; font-weight:bold; min-width:28px; text-align:center;">100</span>
+      <button id="vol-up-btn" style="background:#232323; color:#6cf06c; border:1px solid #333; border-radius:8px; font-size:1rem; font-weight:bold; padding:10px 14px; cursor:pointer;">+</button>
     </div>
 
     </div>

@@ -127,13 +127,11 @@ function updateTimeline() {
                 timelineDragSpan.textContent = `\u2192 ${formatTime(dragValue)}`;
             }
             timelineDragSpan.style.display = "";
-            timelineControls.style.display = "flex";
         }
         else {
             timeline.value = String(Math.floor(current));
             timelineDragSpan.textContent = "";
             timelineDragSpan.style.display = "none";
-            timelineControls.style.display = "none";
         }
         timelineTimeSpan.textContent = formatTime(current) + " / " + formatTime(duration);
         timelineTimeSpan.style.color = "#ccc";
@@ -143,7 +141,6 @@ function updateTimeline() {
         timelineTimeSpan.style.color = "#ccc";
         timelineDragSpan.textContent = "";
         timelineDragSpan.style.display = "none";
-        timelineControls.style.display = "none";
     }
     if (timelineRelToggle) {
         timelineRelToggle.textContent = dragRelative ? "Rel" : "Abs";
@@ -178,6 +175,8 @@ function setupTimelineListeners() {
         updateTimeline();
     });
     timelineApplyBtn.onclick = () => {
+        if (!timelineDragging)
+            return;
         if (player?.seekTo) {
             const target = dragRelative
                 ? Math.floor(player.getCurrentTime()) + dragOffset
@@ -253,17 +252,23 @@ function setupVolumeControls() {
     const volumeLabel = document.getElementById("volume-label");
     const volDownBtn = document.getElementById("vol-down-btn");
     const volUpBtn = document.getElementById("vol-up-btn");
+    const volumeFill = document.getElementById("volume-fill");
     if (!volumeLabel || !volDownBtn || !volUpBtn)
         return;
     let currentVol = Number(localStorage.getItem("yt-volume") ?? "100");
+    const renderVolume = () => {
+        volumeLabel.textContent = String(currentVol);
+        if (volumeFill)
+            volumeFill.style.width = `${currentVol}%`;
+    };
     const setVolume = (vol) => {
         currentVol = Math.max(0, Math.min(100, vol));
         if (player)
             player.setVolume(currentVol);
-        volumeLabel.textContent = String(currentVol);
+        renderVolume();
         localStorage.setItem("yt-volume", String(currentVol));
     };
-    volumeLabel.textContent = String(currentVol);
+    renderVolume();
     volDownBtn.onclick = () => setVolume(currentVol - 10);
     volUpBtn.onclick = () => setVolume(currentVol + 10);
     onPlayerReadyHooks.push(() => setVolume(currentVol));
