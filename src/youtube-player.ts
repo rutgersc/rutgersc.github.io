@@ -429,15 +429,26 @@ export async function apply_vid(vid: string, addHistory: boolean = true): Promis
 
     startSeek(100);
 
-    setTimeout(async () => {
-      if (!player || localStorage.getItem(CURRENT_X_POST_KEY) || localStorage.getItem(CURRENT_VID_KEY) !== vid) return;
-      const raw = player.getVideoData();
-      const details = await resolveChannelDetails(raw.video_id);
-      if (localStorage.getItem(CURRENT_X_POST_KEY) || localStorage.getItem(CURRENT_VID_KEY) !== vid) return;
+    const isStale = (): boolean => localStorage.getItem(CURRENT_X_POST_KEY) !== null || localStorage.getItem(CURRENT_VID_KEY) !== vid;
+
+    const waitForPlayerData = async (attempts: number): Promise<YTVideoData | null> => {
+      const raw = player?.getVideoData();
+      if (raw?.video_id === vid && raw.title && raw.author) return raw;
+      if (attempts <= 1 || isStale()) return raw?.video_id === vid ? raw : null;
+      await new Promise(resolve => setTimeout(resolve, 500));
+      return waitForPlayerData(attempts - 1);
+    };
+
+    (async () => {
+      const detailsPromise = resolveChannelDetails(vid);
+      const raw = await waitForPlayerData(20);
+      if (!player || isStale()) return;
+      const details = await detailsPromise;
+      if (isStale()) return;
       const videoData: VideoData = {
-        video_id: raw.video_id,
-        title: raw.title,
-        author: raw.author,
+        video_id: vid,
+        title: raw?.title || details.title || "",
+        author: raw?.author || details.author || "",
         ...(details.author_url ? { author_url: details.author_url } : {})
       };
 
@@ -463,7 +474,7 @@ export async function apply_vid(vid: string, addHistory: boolean = true): Promis
         timelineDragging = true;
         updateTimeline();
       });
-    }, 2000);
+    })();
   }
 }
 

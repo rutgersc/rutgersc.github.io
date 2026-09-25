@@ -88,10 +88,16 @@ export function addToHistory(videoData: VideoData, _name: string, wasWatchLater:
   const filteredHistory = history
     .filter((item) => item.kind !== 'youtube' || item.videoData.video_id !== videoData.video_id);
 
+  const previousVideoData = existingEntry?.kind === 'youtube' ? existingEntry.videoData : null;
   const dateViewed = new Date().toISOString();
   const entry: HistoryEntry = {
     kind: 'youtube',
-    videoData,
+    videoData: {
+      ...videoData,
+      title: videoData.title || previousVideoData?.title || "",
+      author: videoData.author || previousVideoData?.author || "",
+      ...(!videoData.author_url && previousVideoData?.author_url ? { author_url: previousVideoData.author_url } : {})
+    },
     dateViewed,
     wasWatchLater: preservedWasWatchLater
   };
