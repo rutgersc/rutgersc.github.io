@@ -1,4 +1,5 @@
 import { renderVideoItem, renderXItem, renderChannelGroups } from './ui.js';
+import { renderFeed } from './feed.js';
 import { scheduleSyncToTodo, syncHistoryNow, isHistorySyncReady } from './history-sync.js';
 import { resolveChannelDetails } from './video-utils.js';
 import type { VideoData, VideoProgress } from './video-utils.js';
@@ -159,10 +160,11 @@ export function getHistoryProgress(videoId: string): number {
   return entry?.progress?.currentTime ?? 0;
 }
 
-export type HistoryView = "list" | "grouped";
+export type HistoryView = "list" | "grouped" | "feed";
 
 export function getHistoryView(): HistoryView {
-  return localStorage.getItem("history-view") === "grouped" ? "grouped" : "list";
+  const stored = localStorage.getItem("history-view");
+  return stored === "grouped" || stored === "feed" ? stored : "list";
 }
 
 function setHistoryView(view: HistoryView): void {
@@ -229,6 +231,7 @@ export function renderHistory(): void {
 
     bar.appendChild(makePill("List", view === "list", () => setHistoryView("list")));
     bar.appendChild(makePill("By channel", view === "grouped", () => setHistoryView("grouped")));
+    bar.appendChild(makePill("Feed", view === "feed", () => setHistoryView("feed")));
 
     if (view === "grouped") {
       const sort = getGroupSort();
@@ -261,6 +264,11 @@ export function renderHistory(): void {
     warn.textContent = `⚠ ${history.length} events stored — history is getting large; consider clearing old entries.`;
     warn.style.cssText = "color:#ffd166;background:#2a2410;border:1px solid #5a4a1a;border-radius:6px;padding:8px 14px;margin:0 auto 12px auto;max-width:480px;text-align:center;font-size:0.9rem;";
     history_list.appendChild(warn);
+  }
+
+  if (view === "feed") {
+    history_list.appendChild(renderFeed(history));
+    return;
   }
 
   if (view === "grouped") {

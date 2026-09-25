@@ -1,6 +1,7 @@
 import { getTimeAgo, formatTime, fetchChannelVideos } from './video-utils.js';
 import { apply_input_vid } from './youtube-player.js';
 import { getWatchedVideosIndex } from './history.js';
+import { channelKey, getIgnoredChannels, setChannelIgnored } from './feed.js';
 export function renderXItem(postId, dateViewed, onRemove) {
     const url = `https://x.com/i/status/${postId}`;
     const item = document.createElement('li');
@@ -55,8 +56,8 @@ const renderProgressBar = (currentTime, duration, percentage) => {
     bar.appendChild(text);
     return bar;
 };
-const SHORTS_MAX_SECONDS = 60 * 3;
-const renderChannelVideoItem = (video, watchedIndex) => {
+export const SHORTS_MAX_SECONDS = 60 * 3;
+export const renderChannelVideoItem = (video, watchedIndex) => {
     const isWatched = watchedIndex.has(video.videoId);
     const isShort = video.durationSeconds != null && video.durationSeconds <= SHORTS_MAX_SECONDS;
     const item = document.createElement("div");
@@ -466,11 +467,30 @@ export function renderChannelGroups(channels) {
         latestBtn.style.marginLeft = "8px";
         latestBtn.onmouseenter = () => latestBtn.style.background = "#4a4a4a";
         latestBtn.onmouseleave = () => latestBtn.style.background = "#3a3a3a";
+        const feedTag = document.createElement("span");
+        feedTag.textContent = "not in feed";
+        feedTag.style.cssText = "color:#e76f51;font-size:0.75rem;font-style:italic;margin-left:8px;";
+        const ignoreBtn = document.createElement("button");
+        ignoreBtn.style.cssText = "background:#3a3a3a;color:#fff;border:none;border-radius:4px;padding:2px 8px;cursor:pointer;font-size:0.9em;margin-left:8px;";
+        const applyIgnored = (ignored) => {
+            ignoreBtn.textContent = ignored ? "👁" : "🚫";
+            ignoreBtn.title = ignored ? "Show in feed" : "Hide from feed";
+            channelName.style.opacity = ignored ? "0.5" : "1";
+            feedTag.style.display = ignored ? "inline" : "none";
+        };
+        ignoreBtn.onclick = () => {
+            const ignored = !getIgnoredChannels().has(channelKey(channel));
+            setChannelIgnored(channelKey(channel), ignored);
+            applyIgnored(ignored);
+        };
+        applyIgnored(getIgnoredChannels().has(channelKey(channel)));
+        leftSide.appendChild(feedTag);
         const rightSide = document.createElement("div");
         rightSide.style.display = "flex";
         rightSide.style.alignItems = "center";
         rightSide.appendChild(toggleIcon);
         rightSide.appendChild(latestBtn);
+        rightSide.appendChild(ignoreBtn);
         channelHeader.appendChild(leftSide);
         channelHeader.appendChild(rightSide);
         const videosContainer = document.createElement("div");
@@ -525,7 +545,7 @@ export function renderChannelGroups(channels) {
             videosContainer.appendChild(videoLine);
         });
         channelHeader.onclick = (e) => {
-            if (e.target === channelName || e.target.closest?.("button") === latestBtn)
+            if (e.target === channelName || e.target.closest?.("button"))
                 return;
             const isHidden = videosContainer.style.display === "none";
             videosContainer.style.display = isHidden ? "block" : "none";

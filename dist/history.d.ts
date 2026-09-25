@@ -34,7 +34,7 @@ export declare function addToHistory(videoData: VideoData, _name: string, wasWat
 export declare function addXToHistory(postId: string, wasWatchLater?: boolean): void;
 export declare function updateHistoryProgress(videoId: string, currentTime: number, duration: number): void;
 export declare function getHistoryProgress(videoId: string): number;
-export type HistoryView = "list" | "grouped";
+export type HistoryView = "list" | "grouped" | "feed";
 export declare function getHistoryView(): HistoryView;
 export type GroupSort = "count" | "recent";
 export declare function getGroupSort(): GroupSort;
