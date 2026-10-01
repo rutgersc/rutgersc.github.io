@@ -176,7 +176,8 @@ const resolveUploadsPlaylistId = async (channelId: string): Promise<string | nul
 export async function fetchChannelVideos(
   authorUrl: string | undefined,
   authorId: string | undefined,
-  limit = 10
+  limit = 10,
+  forceRefresh = false
 ): Promise<ChannelVideo[]> {
   const channelId = extractChannelId(authorUrl, authorId);
   if (!channelId) return [];
@@ -185,7 +186,7 @@ export async function fetchChannelVideos(
   const cacheExpiry = 30 * 60 * 1000;
 
   const cached = localStorage.getItem(cacheKey);
-  if (cached) {
+  if (cached && !forceRefresh) {
     const { videos, timestamp } = JSON.parse(cached) as { videos: ChannelVideo[]; timestamp: number };
     if (Date.now() - timestamp < cacheExpiry) {
       return videos.slice(0, limit);

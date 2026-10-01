@@ -38,5 +38,5 @@ export declare function formatTime(sec: number): string;
 export declare function getTimeAgo(date: Date): string;
 export declare function resolveChannelDetails(videoId: string): Promise<ChannelDetails>;
 export declare const YOUTUBE_API_KEY = "AIzaSyDNjnKlfMnFODoLsJAl7B7HCn24AWN1tvQ";
-export declare function fetchChannelVideos(authorUrl: string | undefined, authorId: string | undefined, limit?: number): Promise<ChannelVideo[]>;
+export declare function fetchChannelVideos(authorUrl: string | undefined, authorId: string | undefined, limit?: number, forceRefresh?: boolean): Promise<ChannelVideo[]>;
 export {};

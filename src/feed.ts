@@ -52,9 +52,21 @@ const pickFeedChannels = (history: HistoryEntry[], now: number): ChannelGroup[] 
 const isLongEnough = (v: ChannelVideo): boolean =>
   v.durationSeconds == null || v.durationSeconds > SHORTS_MAX_SECONDS;
 
-export function renderFeed(history: HistoryEntry[]): HTMLDivElement {
+export function renderFeed(history: HistoryEntry[], forceRefresh = false): HTMLDivElement {
   const section = document.createElement("div");
   section.style.cssText = "background:#1a1a1a;border-radius:8px;margin:12px auto;padding:16px;max-width:480px;box-shadow:0 2px 8px rgba(0,0,0,0.12);border:2px solid #4a5568;";
+
+  const controls = document.createElement("div");
+  controls.style.cssText = "display:flex;justify-content:flex-end;margin-bottom:12px;";
+  const refreshBtn = document.createElement("button");
+  refreshBtn.type = "button";
+  refreshBtn.textContent = forceRefresh ? "Refreshing..." : "Refresh";
+  refreshBtn.title = "Fetch the latest videos";
+  refreshBtn.disabled = true;
+  refreshBtn.style.cssText = "background:#232323;color:#8ecae6;border:1px solid #333;border-radius:6px;padding:6px 14px;cursor:pointer;font-weight:bold;";
+  refreshBtn.onclick = () => section.replaceWith(renderFeed(history, true));
+  controls.appendChild(refreshBtn);
+  section.appendChild(controls);
 
   const status = document.createElement("div");
   status.style.cssText = "color:#bbb;font-size:0.9rem;";
@@ -63,6 +75,8 @@ export function renderFeed(history: HistoryEntry[]): HTMLDivElement {
 
   const channels = pickFeedChannels(history, Date.now());
   if (channels.length === 0) {
+    refreshBtn.disabled = false;
+    refreshBtn.textContent = "Refresh";
     status.textContent = "Watch some videos first — the feed follows the channels you watch.";
     return section;
   }
@@ -70,7 +84,7 @@ export function renderFeed(history: HistoryEntry[]): HTMLDivElement {
   const lastSeenAt = localStorage.getItem(LAST_SEEN_KEY) ?? "";
 
   Promise.all(channels.map(ch =>
-    fetchChannelVideos(ch.author_url, ch.author_id, 50)
+    fetchChannelVideos(ch.author_url, ch.author_id, 50, forceRefresh)
       .then(videos => videos
         .filter(isLongEnough)
         .slice(0, VIDEOS_PER_CHANNEL)
@@ -112,6 +126,9 @@ export function renderFeed(history: HistoryEntry[]): HTMLDivElement {
     }).forEach(item => section.appendChild(item));
 
     localStorage.setItem(LAST_SEEN_KEY, new Date().toISOString());
+  }).finally(() => {
+    refreshBtn.disabled = false;
+    refreshBtn.textContent = "Refresh";
   });
 
   return section;

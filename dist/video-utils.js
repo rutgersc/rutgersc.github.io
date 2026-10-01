@@ -137,14 +137,14 @@ const resolveUploadsPlaylistId = async (channelId) => {
     const data = await res.json();
     return data?.items?.[0]?.contentDetails?.relatedPlaylists?.uploads ?? null;
 };
-export async function fetchChannelVideos(authorUrl, authorId, limit = 10) {
+export async function fetchChannelVideos(authorUrl, authorId, limit = 10, forceRefresh = false) {
     const channelId = extractChannelId(authorUrl, authorId);
     if (!channelId)
         return [];
     const cacheKey = `channelVideos:${channelId}`;
     const cacheExpiry = 30 * 60 * 1000;
     const cached = localStorage.getItem(cacheKey);
-    if (cached) {
+    if (cached && !forceRefresh) {
         const { videos, timestamp } = JSON.parse(cached);
         if (Date.now() - timestamp < cacheExpiry) {
             return videos.slice(0, limit);
