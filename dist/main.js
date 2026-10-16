@@ -1,5 +1,7 @@
 import { APP_VERSION } from './version.js';
-import { initializePlayer, select_input_vid, apply_input_vid_from_button } from './youtube-player.js';
+import { initializePlayer, select_input_vid, apply_input_vid_from_button, player } from './youtube-player.js';
+import { initSleepTimer } from './sleep-timer.js';
+import { hideXVideo } from './x-player.js';
 import { renderHistory, clearHistory, dumpAllEvents } from './history.js';
 import { msalLogin, msalLogout, handleRedirectPromise, msalInstance } from './auth.js';
 import { loadWatchLater } from './watch-later.js';
@@ -23,6 +25,11 @@ handleRedirectPromise();
 initViewportManager();
 document.addEventListener('DOMContentLoaded', function () {
     initDebugConsole();
+    initSleepTimer(() => {
+        player?.pauseVideo();
+        if (localStorage.getItem('current-x-post'))
+            hideXVideo();
+    });
     const btn = document.getElementById('msal-login-btn');
     if (btn) {
         btn.onclick = function () {

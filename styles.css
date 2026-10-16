@@ -2,6 +2,29 @@ html {
   overscroll-behavior-y: contain;
 }
 
+#sleep-timer {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  margin: 16px 0;
+}
+
+#sleep-minutes, #sleep-timer button {
+  background: #232323;
+  color: #8ecae6;
+  border: 1px solid #555;
+  border-radius: 8px;
+  padding: 10px;
+  font: inherit;
+}
+
+#sleep-minutes { width: 5em; }
+#sleep-timer button { cursor: pointer; }
+#sleep-timer button:disabled { opacity: 0.5; cursor: default; }
+#sleep-status { flex-basis: 100%; text-align: center; color: #ccc; }
+
 body {
   margin-top: 400px;
   background-color: #121212;

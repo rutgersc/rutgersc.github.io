@@ -57,6 +57,14 @@
       </div>
     </div>
 
+    <form id="sleep-timer">
+      <label for="sleep-minutes">Sleep timer</label>
+      <input id="sleep-minutes" type="number" min="1" max="1440" step="1" value="30" required>
+      <span>minutes</span>
+      <button id="sleep-start" type="submit">Start</button>
+      <button id="sleep-cancel" type="button" disabled>Cancel</button>
+      <span id="sleep-status" role="status">Sleep timer off.</span>
+    </form>
     <div id="x-video" hidden></div>
     <div id="youtube-player-controls">
     <div id="ytplayer"></div>
