@@ -1,6 +1,6 @@
 import { fetchChannelVideos } from './video-utils.js';
 import type { ChannelVideo } from './video-utils.js';
-import { renderChannelVideoItem, SHORTS_MAX_SECONDS } from './ui.js';
+import { renderChannelVideoItem, renderLatestChannelVideos, SHORTS_MAX_SECONDS } from './ui.js';
 import { groupByChannel, getWatchedVideosIndex } from './history.js';
 import type { HistoryEntry, ChannelGroup } from './history.js';
 
@@ -29,6 +29,8 @@ export function setChannelIgnored(key: string, ignored: boolean): void {
 interface FeedVideo extends ChannelVideo {
   channel: string;
   channelKey: string;
+  author_url?: string;
+  author_id?: string;
 }
 
 const pickFeedChannels = (history: HistoryEntry[], now: number): ChannelGroup[] => {
@@ -88,7 +90,7 @@ export function renderFeed(history: HistoryEntry[], forceRefresh = false): HTMLD
       .then(videos => videos
         .filter(isLongEnough)
         .slice(0, VIDEOS_PER_CHANNEL)
-        .map((v): FeedVideo => ({ ...v, channel: ch.author, channelKey: channelKey(ch) })))
+        .map((v): FeedVideo => ({ ...v, channel: ch.author, channelKey: channelKey(ch), author_url: ch.author_url, author_id: ch.author_id })))
       .catch(e => { console.warn("feed: channel fetch failed", ch.author, e); return [] as FeedVideo[]; })
   )).then(perChannel => {
     const feed = perChannel.flat().sort((a, b) => (a.published > b.published ? -1 : 1));
@@ -104,7 +106,13 @@ export function renderFeed(history: HistoryEntry[], forceRefresh = false): HTMLD
       item.dataset.channel = video.channelKey;
       const label = document.createElement("div");
       label.style.cssText = "display:flex;align-items:center;gap:6px;color:#8ecae6;font-size:0.75rem;font-weight:bold;margin-bottom:2px;";
-      label.textContent = video.channel;
+      const name = document.createElement("span");
+      name.textContent = `${video.channel} ▾`;
+      name.title = `Latest uploads of ${video.channel}`;
+      name.style.cursor = "pointer";
+      const latest = renderLatestChannelVideos(video.author_url, video.author_id);
+      name.onclick = () => { name.textContent = `${video.channel} ${latest.toggle() ? "▴" : "▾"}`; };
+      label.appendChild(name);
       const hideBtn = document.createElement("button");
       hideBtn.textContent = "🚫";
       hideBtn.title = `Hide ${video.channel} from feed`;
@@ -117,6 +125,7 @@ export function renderFeed(history: HistoryEntry[], forceRefresh = false): HTMLD
       };
       label.appendChild(hideBtn);
       item.prepend(label);
+      item.appendChild(latest.container);
       if (watchedIndex.has(video.videoId)) item.style.opacity = "0.45";
       if (lastSeenAt && video.published > lastSeenAt) {
         item.style.borderLeft = "3px solid #ffd166";

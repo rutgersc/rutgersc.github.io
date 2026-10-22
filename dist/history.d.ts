@@ -22,6 +22,7 @@ export interface ChannelGroup {
         videoData: VideoData;
         dateViewed: string;
         wasWatchLater?: boolean;
+        progress?: VideoProgress;
     }>;
 }
 export interface CompactedHistory {

@@ -15,6 +15,10 @@ export declare const SHORTS_MAX_SECONDS: number;
 export declare const renderChannelVideoItem: (video: ChannelVideo, watchedIndex: Map<string, {
     dateViewed: string;
 }>) => HTMLDivElement;
+export declare const renderLatestChannelVideos: (author_url: string | undefined, author_id: string | undefined) => {
+    container: HTMLDivElement;
+    toggle: () => boolean;
+};
 export declare function renderVideoItem(videoData: VideoData, dateViewed: string | null, options?: RenderOptions): HTMLLIElement;
 export declare function renderChannelGroups(channels: ChannelGroup[]): HTMLDivElement;
 export declare function initViewportManager(): void;

@@ -163,6 +163,50 @@ const renderChannelVideoList = (container, videos, watchedIndex) => {
     container.appendChild(moreBtn);
     showNext();
 };
+export const renderLatestChannelVideos = (author_url, author_id) => {
+    const container = document.createElement("div");
+    container.style.cssText = "display:none;width:100%;margin-top:6px;padding:8px 10px;background:#1c1c1c;border:1px solid #333;border-radius:6px;box-sizing:border-box;";
+    const status = document.createElement("div");
+    status.style.cssText = "color:#bbb;font-size:0.9rem;";
+    status.textContent = "Loading channel videos...";
+    container.appendChild(status);
+    let fetched = false;
+    const load = async () => {
+        fetched = true;
+        try {
+            const videos = await fetchChannelVideos(author_url, author_id, 50);
+            if (videos.length === 0) {
+                status.textContent = "No videos found for this channel.";
+                return;
+            }
+            status.remove();
+            renderChannelVideoList(container, videos, getWatchedVideosIndex());
+        }
+        catch (e) {
+            console.warn("Failed to fetch channel videos", e);
+            status.textContent = "Failed to load channel videos.";
+        }
+    };
+    const toggle = () => {
+        const open = container.style.display === "none";
+        container.style.display = open ? "block" : "none";
+        if (open && !fetched)
+            void load();
+        return open;
+    };
+    return { container, toggle };
+};
+const makeHeaderToggle = (label, title) => {
+    const btn = document.createElement("button");
+    btn.title = title;
+    btn.style.cssText = "background:#3a3a3a;color:#fff;border:none;border-radius:4px;padding:3px 8px;cursor:pointer;font-size:0.8rem;margin-left:6px;white-space:nowrap;";
+    const setOpen = (open) => {
+        btn.textContent = `${label} ${open ? "▴" : "▾"}`;
+        btn.style.background = open ? "#4a5568" : "#3a3a3a";
+    };
+    setOpen(false);
+    return { btn, setOpen };
+};
 export function renderVideoItem(videoData, dateViewed, options = {}) {
     const { onRemove = null, removeButtonText = '🗑️', removeButtonTitle = 'Remove', onPlay = null, wasWatchLater = false, playUrl = null, onFix = null, progress = null } = options;
     const listItem = document.createElement("li");
@@ -338,54 +382,13 @@ export function renderVideoItem(videoData, dateViewed, options = {}) {
     const progressBar = (progress && progress.percentage !== undefined)
         ? renderProgressBar(progress.currentTime, progress.duration, progress.percentage)
         : null;
-    const expandContainer = document.createElement("div");
-    expandContainer.style.display = "none";
-    expandContainer.style.width = "100%";
-    expandContainer.style.marginTop = "6px";
-    expandContainer.style.padding = "8px 10px";
-    expandContainer.style.background = "#1c1c1c";
-    expandContainer.style.border = "1px solid #333";
-    expandContainer.style.borderRadius = "6px";
-    expandContainer.style.boxSizing = "border-box";
-    const expandStatus = document.createElement("div");
-    expandStatus.style.color = "#bbb";
-    expandStatus.style.fontSize = "0.9rem";
-    expandStatus.textContent = "Loading...";
-    expandContainer.appendChild(expandStatus);
-    let channelVideosFetched = false;
-    async function toggleExpand() {
-        const isOpen = expandContainer.style.display !== "none";
-        if (isOpen) {
-            expandContainer.style.display = "none";
-            expandBtn.textContent = "▾";
-            expandBtn.title = "Expand channel videos";
-            return;
-        }
-        expandContainer.style.display = "block";
-        expandBtn.textContent = "▴";
-        expandBtn.title = "Collapse";
-        if (channelVideosFetched)
-            return;
-        expandStatus.textContent = "Loading channel videos...";
-        try {
-            const videos = await fetchChannelVideos(videoData.author_url, videoData.author_id, 50);
-            if (videos.length === 0) {
-                expandStatus.textContent = "No videos found for this channel.";
-                channelVideosFetched = true;
-                return;
-            }
-            expandStatus.style.display = "none";
-            channelVideosFetched = true;
-            const watchedIndex = getWatchedVideosIndex();
-            renderChannelVideoList(expandContainer, videos, watchedIndex);
-        }
-        catch (e) {
-            console.warn("Failed to fetch channel videos", e);
-            expandStatus.textContent = "Failed to load channel videos.";
-            channelVideosFetched = true;
-        }
-    }
-    expandBtn.onclick = toggleExpand;
+    const latest = renderLatestChannelVideos(videoData.author_url, videoData.author_id);
+    const expandContainer = latest.container;
+    expandBtn.onclick = () => {
+        const open = latest.toggle();
+        expandBtn.textContent = open ? "▴" : "▾";
+        expandBtn.title = open ? "Collapse" : "Expand channel videos";
+    };
     listItem.appendChild(topRow);
     listItem.appendChild(titleP);
     if (progressBar) {
@@ -403,6 +406,7 @@ export function renderChannelGroups(channels) {
     section.style.maxWidth = "480px";
     section.style.boxShadow = "0 2px 8px rgba(0,0,0,0.12)";
     section.style.border = "2px solid #4a5568";
+    const watchedIndex = getWatchedVideosIndex();
     channels.forEach(channel => {
         const channelItem = document.createElement("div");
         channelItem.style.marginBottom = "12px";
@@ -441,32 +445,18 @@ export function renderChannelGroups(channels) {
             channelName.style.color = "#8ecae6";
         };
         const videoCount = document.createElement("span");
-        videoCount.textContent = `${channel.videos.length} video${channel.videos.length !== 1 ? 's' : ''}`;
+        videoCount.textContent = `${channel.videos.length} watched`;
         videoCount.style.color = "#bbb";
         videoCount.style.fontSize = "0.9rem";
         videoCount.style.marginLeft = "12px";
-        const toggleIcon = document.createElement("span");
-        toggleIcon.textContent = "▾";
-        toggleIcon.style.color = "#bbb";
-        toggleIcon.style.fontSize = "1.2rem";
         const leftSide = document.createElement("div");
         leftSide.style.display = "flex";
         leftSide.style.alignItems = "center";
+        leftSide.style.minWidth = "0";
         leftSide.appendChild(channelName);
         leftSide.appendChild(videoCount);
-        const latestBtn = document.createElement("button");
-        latestBtn.textContent = "📺";
-        latestBtn.title = "Latest channel videos";
-        latestBtn.style.background = "#3a3a3a";
-        latestBtn.style.color = "#fff";
-        latestBtn.style.border = "none";
-        latestBtn.style.borderRadius = "4px";
-        latestBtn.style.padding = "2px 8px";
-        latestBtn.style.cursor = "pointer";
-        latestBtn.style.fontSize = "0.9em";
-        latestBtn.style.marginLeft = "8px";
-        latestBtn.onmouseenter = () => latestBtn.style.background = "#4a4a4a";
-        latestBtn.onmouseleave = () => latestBtn.style.background = "#3a3a3a";
+        const watchedToggle = makeHeaderToggle("Watched", "Videos you watched from this channel");
+        const latestToggle = makeHeaderToggle("Latest", "Latest uploads of this channel");
         const feedTag = document.createElement("span");
         feedTag.textContent = "not in feed";
         feedTag.style.cssText = "color:#e76f51;font-size:0.75rem;font-style:italic;margin-left:8px;";
@@ -488,8 +478,8 @@ export function renderChannelGroups(channels) {
         const rightSide = document.createElement("div");
         rightSide.style.display = "flex";
         rightSide.style.alignItems = "center";
-        rightSide.appendChild(toggleIcon);
-        rightSide.appendChild(latestBtn);
+        rightSide.appendChild(watchedToggle.btn);
+        rightSide.appendChild(latestToggle.btn);
         rightSide.appendChild(ignoreBtn);
         channelHeader.appendChild(leftSide);
         channelHeader.appendChild(rightSide);
@@ -498,103 +488,30 @@ export function renderChannelGroups(channels) {
         videosContainer.style.marginTop = "10px";
         videosContainer.style.paddingTop = "10px";
         videosContainer.style.borderTop = "1px solid #333";
-        channel.videos.forEach(video => {
-            const videoLine = document.createElement("div");
-            videoLine.style.display = "flex";
-            videoLine.style.alignItems = "center";
-            videoLine.style.justifyContent = "space-between";
-            videoLine.style.padding = "6px 0";
-            videoLine.style.fontSize = "0.9rem";
-            videoLine.style.borderBottom = "1px solid #2a2a2a";
-            const videoInfo = document.createElement("div");
-            videoInfo.style.display = "flex";
-            videoInfo.style.flexDirection = "column";
-            videoInfo.style.flex = "1";
-            videoInfo.style.marginRight = "10px";
-            videoInfo.style.minWidth = "0";
-            const videoTitle = document.createElement("div");
-            videoTitle.textContent = video.videoData.title;
-            videoTitle.style.color = "#fff";
-            videoTitle.style.fontSize = "0.85rem";
-            videoTitle.style.whiteSpace = "nowrap";
-            videoTitle.style.overflow = "hidden";
-            videoTitle.style.textOverflow = "ellipsis";
-            videoTitle.style.marginBottom = "2px";
-            const videoDate = document.createElement("div");
-            videoDate.textContent = getTimeAgo(new Date(video.dateViewed));
-            videoDate.style.color = "#888";
-            videoDate.style.fontSize = "0.75rem";
-            videoInfo.appendChild(videoTitle);
-            videoInfo.appendChild(videoDate);
-            const playBtn = document.createElement("button");
-            playBtn.textContent = "▶️";
-            playBtn.title = "Play";
-            playBtn.style.background = "#2d6a4f";
-            playBtn.style.color = "#fff";
-            playBtn.style.border = "none";
-            playBtn.style.borderRadius = "4px";
-            playBtn.style.padding = "4px 8px";
-            playBtn.style.cursor = "pointer";
-            playBtn.style.fontSize = "0.9em";
-            playBtn.style.flexShrink = "0";
-            playBtn.onmouseenter = () => playBtn.style.background = "#40916c";
-            playBtn.onmouseleave = () => playBtn.style.background = "#2d6a4f";
-            playBtn.onclick = () => apply_input_vid(video.videoData.video_id);
-            videoLine.appendChild(videoInfo);
-            videoLine.appendChild(playBtn);
-            videosContainer.appendChild(videoLine);
-        });
+        channel.videos
+            .map(video => renderChannelVideoItem({
+            videoId: video.videoData.video_id,
+            title: video.videoData.title,
+            published: video.dateViewed,
+            durationSeconds: video.progress?.duration ?? null
+        }, watchedIndex))
+            .forEach(item => videosContainer.appendChild(item));
+        const toggleWatched = () => {
+            const open = videosContainer.style.display === "none";
+            videosContainer.style.display = open ? "block" : "none";
+            watchedToggle.setOpen(open);
+        };
+        watchedToggle.btn.onclick = toggleWatched;
         channelHeader.onclick = (e) => {
             if (e.target === channelName || e.target.closest?.("button"))
                 return;
-            const isHidden = videosContainer.style.display === "none";
-            videosContainer.style.display = isHidden ? "block" : "none";
-            toggleIcon.textContent = isHidden ? "▴" : "▾";
+            toggleWatched();
         };
-        const latestContainer = document.createElement("div");
-        latestContainer.style.display = "none";
-        latestContainer.style.marginTop = "10px";
-        latestContainer.style.paddingTop = "10px";
-        latestContainer.style.borderTop = "1px solid #444";
-        let latestFetched = false;
-        latestBtn.onclick = async () => {
-            const isOpen = latestContainer.style.display !== "none";
-            if (isOpen) {
-                latestContainer.style.display = "none";
-                latestBtn.textContent = "📺";
-                latestBtn.title = "Latest channel videos";
-                return;
-            }
-            latestContainer.style.display = "block";
-            latestBtn.textContent = "📺";
-            latestBtn.title = "Collapse";
-            if (latestFetched)
-                return;
-            const status = document.createElement("div");
-            status.style.color = "#bbb";
-            status.style.fontSize = "0.9rem";
-            status.textContent = "Loading channel videos...";
-            latestContainer.appendChild(status);
-            try {
-                const videos = await fetchChannelVideos(channel.author_url, channel.author_id, 50);
-                if (videos.length === 0) {
-                    status.textContent = "No videos found for this channel.";
-                }
-                else {
-                    status.style.display = "none";
-                    const watchedIndex = getWatchedVideosIndex();
-                    renderChannelVideoList(latestContainer, videos, watchedIndex);
-                }
-            }
-            catch (e) {
-                console.warn("Failed to fetch channel videos", e);
-                status.textContent = "Failed to load channel videos.";
-            }
-            latestFetched = true;
-        };
+        const latest = renderLatestChannelVideos(channel.author_url, channel.author_id);
+        latestToggle.btn.onclick = () => latestToggle.setOpen(latest.toggle());
         channelItem.appendChild(channelHeader);
         channelItem.appendChild(videosContainer);
-        channelItem.appendChild(latestContainer);
+        channelItem.appendChild(latest.container);
         section.appendChild(channelItem);
     });
     return section;

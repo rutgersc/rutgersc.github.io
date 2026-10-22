@@ -131,7 +131,7 @@ export function groupByChannel(history, sort = "count") {
         const vd = entry.videoData;
         const key = vd.author_url || vd.author || vd.video_id;
         const group = acc[key] ?? (acc[key] = { author: vd.author, author_url: vd.author_url, videos: [] });
-        group.videos.push({ videoData: vd, dateViewed: entry.dateViewed, wasWatchLater: entry.wasWatchLater });
+        group.videos.push({ videoData: vd, dateViewed: entry.dateViewed, wasWatchLater: entry.wasWatchLater, progress: entry.progress });
         return acc;
     }, {});
     const grouped = Object.values(groups)
