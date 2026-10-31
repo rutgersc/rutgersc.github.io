@@ -12,7 +12,8 @@ let isInitialSeek = false;
 let timeline;
 let timelineTimeSpan;
 let timelineDragSpan;
-let timelineApplyBtn;
+let timelineApplyMinusBtn;
+let timelineApplyPlusBtn;
 let timelineCancelBtn;
 let timelineControls;
 let timelineRelToggle;
@@ -32,7 +33,8 @@ export function initializePlayer() {
     timeline = document.getElementById("timeline");
     timelineTimeSpan = document.getElementById("timeline-time-span");
     timelineDragSpan = document.getElementById("timeline-drag-span");
-    timelineApplyBtn = document.getElementById("timeline-apply-btn");
+    timelineApplyMinusBtn = document.getElementById("timeline-apply-minus-btn");
+    timelineApplyPlusBtn = document.getElementById("timeline-apply-plus-btn");
     timelineCancelBtn = document.getElementById("timeline-cancel-btn");
     timelineControls = document.getElementById("timeline-controls");
     timelineRelToggle = document.getElementById("timeline-rel-toggle");
@@ -151,7 +153,7 @@ function updateTimeline() {
     }
 }
 function setupTimelineListeners() {
-    if (!timeline || !timelineApplyBtn || !timelineCancelBtn || !timelineControls || !timelineRelToggle)
+    if (!timeline || !timelineApplyMinusBtn || !timelineApplyPlusBtn || !timelineCancelBtn || !timelineControls || !timelineRelToggle)
         return;
     timeline.addEventListener("input", () => {
         timelineDragging = true;
@@ -174,17 +176,19 @@ function setupTimelineListeners() {
         }
         updateTimeline();
     });
-    timelineApplyBtn.onclick = () => {
+    const applyOffset = (direction) => {
         if (!timelineDragging)
             return;
         if (player?.seekTo) {
             const target = dragRelative
-                ? Math.floor(player.getCurrentTime()) + dragOffset
+                ? Math.floor(player.getCurrentTime()) + direction * Math.abs(dragOffset)
                 : dragValue;
             player.seekTo(Math.max(0, target), true);
         }
         updateTimeline();
     };
+    timelineApplyMinusBtn.onclick = () => applyOffset(-1);
+    timelineApplyPlusBtn.onclick = () => applyOffset(1);
     timelineCancelBtn.onclick = () => {
         timelineDragging = false;
         updateTimeline();

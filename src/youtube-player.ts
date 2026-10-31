@@ -96,7 +96,8 @@ let isInitialSeek = false;
 let timeline: HTMLInputElement | null;
 let timelineTimeSpan: HTMLElement | null;
 let timelineDragSpan: HTMLElement | null;
-let timelineApplyBtn: HTMLButtonElement | null;
+let timelineApplyMinusBtn: HTMLButtonElement | null;
+let timelineApplyPlusBtn: HTMLButtonElement | null;
 let timelineCancelBtn: HTMLButtonElement | null;
 let timelineControls: HTMLElement | null;
 let timelineRelToggle: HTMLButtonElement | null;
@@ -121,7 +122,8 @@ export function initializePlayer(): void {
   timeline = document.getElementById("timeline") as HTMLInputElement | null;
   timelineTimeSpan = document.getElementById("timeline-time-span");
   timelineDragSpan = document.getElementById("timeline-drag-span");
-  timelineApplyBtn = document.getElementById("timeline-apply-btn") as HTMLButtonElement | null;
+  timelineApplyMinusBtn = document.getElementById("timeline-apply-minus-btn") as HTMLButtonElement | null;
+  timelineApplyPlusBtn = document.getElementById("timeline-apply-plus-btn") as HTMLButtonElement | null;
   timelineCancelBtn = document.getElementById("timeline-cancel-btn") as HTMLButtonElement | null;
   timelineControls = document.getElementById("timeline-controls");
   timelineRelToggle = document.getElementById("timeline-rel-toggle") as HTMLButtonElement | null;
@@ -247,7 +249,7 @@ function updateTimeline(): void {
 }
 
 function setupTimelineListeners(): void {
-  if (!timeline || !timelineApplyBtn || !timelineCancelBtn || !timelineControls || !timelineRelToggle) return;
+  if (!timeline || !timelineApplyMinusBtn || !timelineApplyPlusBtn || !timelineCancelBtn || !timelineControls || !timelineRelToggle) return;
 
   timeline.addEventListener("input", () => {
     timelineDragging = true;
@@ -270,16 +272,19 @@ function setupTimelineListeners(): void {
     updateTimeline();
   });
 
-  timelineApplyBtn.onclick = () => {
+  const applyOffset = (direction: -1 | 1): void => {
     if (!timelineDragging) return;
     if (player?.seekTo) {
       const target = dragRelative
-        ? Math.floor(player.getCurrentTime()) + dragOffset
+        ? Math.floor(player.getCurrentTime()) + direction * Math.abs(dragOffset)
         : dragValue;
       player.seekTo(Math.max(0, target), true);
     }
     updateTimeline();
   };
+
+  timelineApplyMinusBtn.onclick = () => applyOffset(-1);
+  timelineApplyPlusBtn.onclick = () => applyOffset(1);
 
   timelineCancelBtn.onclick = () => {
     timelineDragging = false;
