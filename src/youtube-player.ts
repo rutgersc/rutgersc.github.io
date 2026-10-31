@@ -131,6 +131,7 @@ export function initializePlayer(): void {
 
   setupTimelineListeners();
   setupPlayPauseButton();
+  setupFullscreenButton();
   setupVolumeControls();
   window.onbeforeunload = savePosition;
 
@@ -313,6 +314,27 @@ function setupTimelineListeners(): void {
       updateTimeline();
     };
   });
+}
+
+function setupFullscreenButton(): void {
+  const button = document.getElementById('fullscreen-btn') as HTMLButtonElement | null;
+  const status = document.getElementById('fullscreen-status');
+  if (!button || !status) return;
+
+  button.disabled = !document.fullscreenEnabled;
+  if (button.disabled) status.textContent = 'Fullscreen is unavailable in this browser.';
+
+  button.onclick = async () => {
+    const iframe = document.getElementById('ytplayer');
+    if (!(iframe instanceof HTMLIFrameElement)) return;
+
+    status.textContent = '';
+    try {
+      await iframe.requestFullscreen();
+    } catch {
+      status.textContent = 'Could not enter fullscreen. Try the fullscreen button inside the video.';
+    }
+  };
 }
 
 function updatePlayPauseButton(): void {
