@@ -1,3 +1,5 @@
+import { isPodcastUrl } from './podcast-player.js';
+
 export interface VideoData {
   video_id: string;
   title: string;
@@ -15,7 +17,8 @@ export interface VideoProgress {
 
 export type VideoRef =
   | { kind: 'youtube'; id: string; startSeconds: number | null }
-  | { kind: 'x'; postId: string };
+  | { kind: 'x'; postId: string }
+  | { kind: 'podcast'; pageUrl: string };
 
 export function extractXPostId(input: string): string | null {
   try {
@@ -31,7 +34,8 @@ export function parseVideoRef(input: string): VideoRef | null {
   const postId = extractXPostId(input);
   if (postId) return { kind: 'x', postId };
   const id = extractYouTubeId(input);
-  return id ? { kind: 'youtube', id, startSeconds: extractTimestamp(input) } : null;
+  if (id) return { kind: 'youtube', id, startSeconds: extractTimestamp(input) };
+  return isPodcastUrl(input) ? { kind: 'podcast', pageUrl: input } : null;
 }
 
 interface ChannelDetails {

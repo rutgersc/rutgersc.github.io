@@ -18,6 +18,9 @@ export type VideoRef = {
 } | {
     kind: 'x';
     postId: string;
+} | {
+    kind: 'podcast';
+    pageUrl: string;
 };
 export declare function extractXPostId(input: string): string | null;
 export declare function parseVideoRef(input: string): VideoRef | null;

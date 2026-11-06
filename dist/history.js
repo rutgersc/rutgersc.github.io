@@ -2,7 +2,11 @@ import { renderVideoItem, renderXItem, renderChannelGroups } from './ui.js';
 import { renderFeed } from './feed.js';
 import { scheduleSyncToTodo, syncHistoryNow, isHistorySyncReady } from './history-sync.js';
 import { resolveChannelDetails } from './video-utils.js';
-export const historyKey = (entry) => entry.kind === 'x' ? `x:${entry.postId}` : `youtube:${entry.videoData.video_id}`;
+import { parsePodcastHistoryEntry, renderPodcastItem } from './podcast-player.js';
+import { apply_input_vid } from './youtube-player.js';
+export const historyKey = (entry) => entry.kind === 'x' ? `x:${entry.postId}`
+    : entry.kind === 'podcast' ? `podcast:${entry.episode.pageUrl}`
+        : `youtube:${entry.videoData.video_id}`;
 export function parseHistoryEntry(value) {
     if (!value || typeof value !== 'object')
         return null;
@@ -12,6 +16,8 @@ export function parseHistoryEntry(value) {
             ? { kind: 'x', postId: entry.postId, dateViewed: entry.dateViewed, wasWatchLater: entry.wasWatchLater === true }
             : null;
     }
+    if (entry.kind === 'podcast')
+        return parsePodcastHistoryEntry(entry);
     if (entry.kind !== undefined && entry.kind !== 'youtube')
         return null;
     if (!entry.videoData || typeof entry.videoData !== 'object')
@@ -91,6 +97,30 @@ export function addXToHistory(postId, wasWatchLater = false) {
     renderHistory();
     if (isHistorySyncReady())
         syncHistoryNow();
+}
+export function addPodcastToHistory(episode, wasWatchLater = false) {
+    const history = getHistory();
+    const previous = history.find((item) => item.kind === 'podcast' && item.episode.pageUrl === episode.pageUrl);
+    const entry = {
+        kind: 'podcast',
+        episode,
+        dateViewed: new Date().toISOString(),
+        wasWatchLater: wasWatchLater || previous?.wasWatchLater === true,
+        ...(previous?.progress ? { progress: previous.progress } : {})
+    };
+    localStorage.setItem('history', JSON.stringify([entry, ...history.filter(item => historyKey(item) !== historyKey(entry))]));
+    renderHistory();
+    if (isHistorySyncReady())
+        syncHistoryNow();
+}
+export function updatePodcastProgress(pageUrl, progress) {
+    const history = getHistory().map(item => item.kind === 'podcast' && item.episode.pageUrl === pageUrl ? { ...item, progress } : item);
+    localStorage.setItem('history', JSON.stringify(history));
+    scheduleSyncToTodo();
+}
+export function getPodcastProgress(pageUrl) {
+    const entry = getHistory().find((item) => item.kind === 'podcast' && item.episode.pageUrl === pageUrl);
+    return entry?.progress?.currentTime ?? 0;
 }
 export function updateHistoryProgress(videoId, currentTime, duration) {
     const history = getHistory();
@@ -203,6 +233,9 @@ export function renderHistory() {
         history.filter((entry) => entry.kind === 'x').forEach(entry => {
             history_list.appendChild(renderXItem(entry.postId, entry.dateViewed, () => removeEntry(historyKey(entry))));
         });
+        history.filter((entry) => entry.kind === 'podcast').forEach(entry => {
+            history_list.appendChild(renderPodcastItem(entry, () => apply_input_vid(entry.episode.pageUrl), () => removeEntry(historyKey(entry))));
+        });
         history_list.appendChild(renderChannelGroups(groupByChannel(history, getGroupSort())));
         return;
     }
@@ -233,6 +266,9 @@ export function renderHistory() {
     history.slice(0, flatRenderLimit).forEach(entry => {
         if (entry.kind === 'x') {
             history_list.appendChild(renderXItem(entry.postId, entry.dateViewed, () => removeEntry(historyKey(entry))));
+        }
+        else if (entry.kind === 'podcast') {
+            history_list.appendChild(renderPodcastItem(entry, () => apply_input_vid(entry.episode.pageUrl), () => removeEntry(historyKey(entry))));
         }
         else {
             history_list.appendChild(renderVideoItem(entry.videoData, entry.dateViewed, {
@@ -306,7 +342,9 @@ export function dumpAllEvents() {
     history.forEach((event, index) => {
         output += event.kind === 'x'
             ? `[${index}] X post ${event.postId}\n`
-            : `[${index}] ${event.videoData.author} - ${event.videoData.title}\n    Video ID: ${event.videoData.video_id}\n`;
+            : event.kind === 'podcast'
+                ? `[${index}] Podcast ${event.episode.show} - ${event.episode.title}\n    Page: ${event.episode.pageUrl}\n`
+                : `[${index}] ${event.videoData.author} - ${event.videoData.title}\n    Video ID: ${event.videoData.video_id}\n`;
         output += `    Viewed: ${event.dateViewed}\n\n`;
     });
     if (compacted) {

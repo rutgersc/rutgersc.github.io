@@ -1,8 +1,9 @@
 import { extractYouTubeId, parseVideoRef, formatTime, resolveChannelDetails, VideoProgress, VideoData } from './video-utils.js';
-import { addToHistory, addXToHistory, updateHistoryProgress, getHistoryProgress } from './history.js';
+import { addToHistory, addXToHistory, updateHistoryProgress, getHistoryProgress, addPodcastToHistory, updatePodcastProgress, getPodcastProgress } from './history.js';
 import { isVideoInWatchLater, removeFromWatchLater, loadWatchLater } from './watch-later.js';
 import { fetchChapters, renderChapters, highlightCurrentChapter, type Chapter } from './chapters.js';
 import { hideXVideo, showXVideo } from './x-player.js';
+import { CURRENT_PODCAST_KEY, hidePodcast, showPodcast } from './podcast-player.js';
 
 declare global {
   const YT: {
@@ -87,6 +88,7 @@ declare global {
 
 const CURRENT_VID_KEY = "current-vid";
 const CURRENT_X_POST_KEY = 'current-x-post';
+const isOtherSourceActive = (): boolean => localStorage.getItem(CURRENT_X_POST_KEY) !== null || localStorage.getItem(CURRENT_PODCAST_KEY) !== null;
 
 export let player: YTPlayer | undefined;
 let savingTimer: ReturnType<typeof setInterval> | undefined;
@@ -153,7 +155,7 @@ function onYouTubePlayerAPIReady(): void {
 function onPlayerStateChange(e: YTStateChangeEvent): void {
   console.log("onPlayerStateChange", e);
   currentPlayerState = e.data;
-  if (localStorage.getItem(CURRENT_X_POST_KEY)) {
+  if (isOtherSourceActive()) {
     clearInterval(savingTimer);
     return;
   }
@@ -175,7 +177,7 @@ function onPlayerStateChange(e: YTStateChangeEvent): void {
 }
 
 function savePosition(): void {
-  if (!player?.getVideoUrl || localStorage.getItem(CURRENT_X_POST_KEY)) return;
+  if (!player?.getVideoUrl || isOtherSourceActive()) return;
 
   if (isInitialSeek) {
     console.log("savePosition: skipping during initial seek");
@@ -404,7 +406,9 @@ function setupVolumeControls(): void {
 function onPlayerReady(): void {
   console.log("onPlayerReady");
   const postId = localStorage.getItem(CURRENT_X_POST_KEY);
-  if (postId) {
+  const podcastUrl = localStorage.getItem(CURRENT_PODCAST_KEY);
+  if (podcastUrl) playPodcast(podcastUrl, false);
+  else if (postId) {
     showXCurrentUi(postId);
     showXVideo(postId);
   }
@@ -421,7 +425,7 @@ function restoreCurrentVideo(): void {
 }
 
 function startSeek(retryDelay: number): void {
-  if (!player || localStorage.getItem(CURRENT_X_POST_KEY)) return;
+  if (!player || isOtherSourceActive()) return;
   const dur = player.getDuration();
   console.log("getDuration", dur);
   if (dur > 0) {
@@ -443,7 +447,9 @@ export async function apply_vid(vid: string, addHistory: boolean = true): Promis
   console.log("apply_vid", vid);
   if (vid && player) {
     localStorage.removeItem(CURRENT_X_POST_KEY);
+    localStorage.removeItem(CURRENT_PODCAST_KEY);
     hideXVideo();
+    hidePodcast();
     const parsedUrlContainer = document.getElementById("parsed-url-container");
     const parsedUrlInput = document.getElementById("parsed-url") as HTMLInputElement | null;
     const fullUrl = `https://www.youtube.com/watch?v=${vid}`;
@@ -451,7 +457,7 @@ export async function apply_vid(vid: string, addHistory: boolean = true): Promis
     if (parsedUrlContainer) parsedUrlContainer.style.display = "block";
 
     const checklistItemId = await isVideoInWatchLater({ kind: 'youtube', id: vid, startSeconds: null });
-    if (localStorage.getItem(CURRENT_X_POST_KEY) || localStorage.getItem(CURRENT_VID_KEY) !== vid) return;
+    if (isOtherSourceActive() || localStorage.getItem(CURRENT_VID_KEY) !== vid) return;
     const wasWatchLater = checklistItemId !== null;
 
     isInitialSeek = true;
@@ -460,7 +466,7 @@ export async function apply_vid(vid: string, addHistory: boolean = true): Promis
 
     startSeek(100);
 
-    const isStale = (): boolean => localStorage.getItem(CURRENT_X_POST_KEY) !== null || localStorage.getItem(CURRENT_VID_KEY) !== vid;
+    const isStale = (): boolean => isOtherSourceActive() || localStorage.getItem(CURRENT_VID_KEY) !== vid;
 
     const waitForPlayerData = async (attempts: number): Promise<YTVideoData | null> => {
       const raw = player?.getVideoData();
@@ -516,12 +522,24 @@ export function apply_input_vid(str: string): void {
     if (ref.startSeconds !== null) localStorage.setItem('vid-' + ref.id, String(ref.startSeconds));
     localStorage.setItem(CURRENT_VID_KEY, ref.id);
     localStorage.removeItem(CURRENT_X_POST_KEY);
+    localStorage.removeItem(CURRENT_PODCAST_KEY);
     hideXVideo();
+    hidePodcast();
     apply_vid(ref.id);
     return;
   }
 
+  if (ref.kind === 'podcast') {
+    savePosition();
+    localStorage.removeItem(CURRENT_X_POST_KEY);
+    hideXVideo();
+    playPodcast(ref.pageUrl, true);
+    return;
+  }
+
   savePosition();
+  localStorage.removeItem(CURRENT_PODCAST_KEY);
+  hidePodcast();
   localStorage.setItem(CURRENT_X_POST_KEY, ref.postId);
   player?.stopVideo();
   showXCurrentUi(ref.postId);
@@ -529,6 +547,29 @@ export function apply_input_vid(str: string): void {
   isVideoInWatchLater(ref).then(async checklistItemId => {
     if (localStorage.getItem(CURRENT_X_POST_KEY) !== ref.postId) return;
     addXToHistory(ref.postId, checklistItemId !== null);
+    if (checklistItemId) {
+      await removeFromWatchLater(checklistItemId, null);
+      await loadWatchLater();
+    }
+  });
+}
+
+function playPodcast(pageUrl: string, addHistory: boolean): void {
+  localStorage.setItem(CURRENT_PODCAST_KEY, pageUrl);
+  player?.stopVideo();
+  const parsedUrl = document.getElementById('parsed-url') as HTMLInputElement | null;
+  if (parsedUrl) parsedUrl.value = pageUrl;
+  const parsedUrlContainer = document.getElementById('parsed-url-container');
+  if (parsedUrlContainer) parsedUrlContainer.style.display = 'block';
+  const isCurrent = (): boolean => localStorage.getItem(CURRENT_PODCAST_KEY) === pageUrl;
+  showPodcast(pageUrl, () => ({
+    startAt: getPodcastProgress(pageUrl),
+    onProgress: progress => { if (isCurrent()) updatePodcastProgress(pageUrl, progress); }
+  })).then(async episode => {
+    if (!episode || !isCurrent()) return;
+    const checklistItemId = await isVideoInWatchLater({ kind: 'podcast', pageUrl });
+    if (!isCurrent()) return;
+    if (addHistory || !getPodcastProgress(pageUrl)) addPodcastToHistory(episode, checklistItemId !== null);
     if (checklistItemId) {
       await removeFromWatchLater(checklistItemId, null);
       await loadWatchLater();

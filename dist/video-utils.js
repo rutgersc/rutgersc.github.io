@@ -1,3 +1,4 @@
+import { isPodcastUrl } from './podcast-player.js';
 export function extractXPostId(input) {
     try {
         const url = new URL(input);
@@ -14,7 +15,9 @@ export function parseVideoRef(input) {
     if (postId)
         return { kind: 'x', postId };
     const id = extractYouTubeId(input);
-    return id ? { kind: 'youtube', id, startSeconds: extractTimestamp(input) } : null;
+    if (id)
+        return { kind: 'youtube', id, startSeconds: extractTimestamp(input) };
+    return isPodcastUrl(input) ? { kind: 'podcast', pageUrl: input } : null;
 }
 export function extractYouTubeId(input) {
     try {

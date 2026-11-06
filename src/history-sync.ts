@@ -119,8 +119,8 @@ function mergeHistories(local: HistoryEntry[], remote: HistoryEntry[]): HistoryE
       if (entryDate > existingDate) {
         byVideoId.set(videoId, entry);
       } else if (entryDate.getTime() === existingDate.getTime()) {
-        if (entry.kind === 'youtube' && existing.kind === 'youtube' && entry.progress && (!existing.progress || entry.progress.currentTime > existing.progress.currentTime)) {
-          byVideoId.set(videoId, { ...existing, progress: entry.progress });
+        if (entry.kind !== 'x' && existing.kind === entry.kind && entry.progress && (!existing.progress || entry.progress.currentTime > existing.progress.currentTime)) {
+          byVideoId.set(videoId, { ...existing, progress: entry.progress } as HistoryEntry);
         }
       }
     }

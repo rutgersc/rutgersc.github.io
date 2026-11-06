@@ -2,6 +2,7 @@ import { APP_VERSION } from './version.js';
 import { initializePlayer, select_input_vid, apply_input_vid_from_button, player } from './youtube-player.js';
 import { initSleepTimer } from './sleep-timer.js';
 import { hideXVideo } from './x-player.js';
+import { currentPodcastAudio } from './podcast-player.js';
 import { renderHistory, clearHistory, dumpAllEvents } from './history.js';
 import { msalLogin, msalLogout, handleRedirectPromise, msalInstance } from './auth.js';
 import { loadWatchLater } from './watch-later.js';
@@ -29,6 +30,7 @@ document.addEventListener('DOMContentLoaded', function () {
         player?.pauseVideo();
         if (localStorage.getItem('current-x-post'))
             hideXVideo();
+        currentPodcastAudio()?.pause();
     });
     const btn = document.getElementById('msal-login-btn');
     if (btn) {

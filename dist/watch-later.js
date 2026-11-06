@@ -62,7 +62,7 @@ export async function isVideoInWatchLater(ref) {
                 || (parsed?.kind === 'youtube' && ref.kind === 'youtube' && parsed.id === ref.id)) {
                 return item.id;
             }
-            if (ref.kind === 'x')
+            if (ref.kind !== 'youtube')
                 continue;
             try {
                 const videoData = JSON.parse(item.displayName);
