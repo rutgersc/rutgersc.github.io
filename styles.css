@@ -67,6 +67,49 @@ body {
   display: flex;
 }
 
+#podcast-player:not([hidden]) {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 16px 0;
+}
+
+#podcast-player > a {
+  color: #8ecae6;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+
+#podcast-player audio {
+  display: block;
+  width: 100%;
+  min-width: 0;
+}
+
+.podcast-seek-controls {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  width: 100%;
+  max-width: 480px;
+  align-self: center;
+  gap: 8px;
+}
+
+.podcast-seek-controls button {
+  background: #232323;
+  color: #8ecae6;
+  border: 1px solid #555;
+  border-radius: 8px;
+  padding: 12px 16px;
+  font: inherit;
+  cursor: pointer;
+}
+
+.podcast-seek-controls button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
 .x-list-item {
   display: flex;
   align-items: center;

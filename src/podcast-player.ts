@@ -168,6 +168,31 @@ export async function showPodcast(pageUrl: string, hooks: (episode: PodcastEpiso
     audio.src = episode.audioUrl;
     audio.addEventListener('loadedmetadata', () => { if (startAt > 0) audio.currentTime = startAt; }, { once: true });
 
+    const seekControls = document.createElement('div');
+    seekControls.className = 'podcast-seek-controls';
+    seekControls.setAttribute('role', 'group');
+    seekControls.setAttribute('aria-label', 'Seek audio');
+    const seekButtons = [-15, -10, -5, 5, 10, 15].map(offset => {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.textContent = `${offset > 0 ? '+' : '−'}${Math.abs(offset)}s`;
+      button.setAttribute('aria-label', `Seek ${offset > 0 ? 'forward' : 'backward'} ${Math.abs(offset)} seconds`);
+      button.disabled = true;
+      button.onclick = () => {
+        if (!Number.isFinite(audio.duration) || audio.duration <= 0) return;
+        audio.currentTime = Math.max(0, Math.min(audio.duration, audio.currentTime + offset));
+      };
+      return button;
+    });
+    seekControls.append(...seekButtons);
+    const updateSeekButtons = (): void => {
+      const disabled = !Number.isFinite(audio.duration) || audio.duration <= 0;
+      seekButtons.map(button => { button.disabled = disabled; });
+    };
+    audio.addEventListener('loadedmetadata', updateSeekButtons);
+    audio.addEventListener('durationchange', updateSeekButtons);
+    audio.addEventListener('emptied', updateSeekButtons);
+
     const report = (): void => {
       if (audio.duration > 0) onProgress({ currentTime: audio.currentTime, duration: audio.duration, percentage: (audio.currentTime / audio.duration) * 100 });
     };
@@ -181,7 +206,7 @@ export async function showPodcast(pageUrl: string, hooks: (episode: PodcastEpiso
     audio.addEventListener('seeked', report);
 
     document.title = episode.title;
-    container.replaceChildren(title, audio);
+    container.replaceChildren(title, audio, seekControls);
     return episode;
   } catch (error) {
     if (currentRender !== renderId) return null;
